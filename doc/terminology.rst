@@ -12,13 +12,13 @@ As succinctly outlined in `pytest`_, a test can be thought of in four phases:
 In normal unit testing, the **Arrange** phase is the most carefully defined, while the
 rest follow naturally from the designed configuration.
 Here, we are focused on integration tests of a software package.
-Thus, the **Arrange** phase is simply providing the :ref:`input-conditions`: writing the
+Thus, the **Arrange** phase is simply providing the *input-conditions*: writing the
 appropriate program input (and potentially setting some environment variables).
 The **Act** and **Cleanup** phases are similarly straightforward---the program is run,
-producing the :ref:`program output <program-output>`, and the output is eventually discarded.
+producing the *program output*, and the output is eventually discarded.
 However, the **Assert** step becomes much more involved, as the program output can have
 many constituent results, which all must be validated differently.
-A test consists of the four phases outlined above applied to one set of input conditions.
+A *test* consists of the four phases outlined above applied to one set of input conditions.
 
 
 .. _pytest : https://docs.pytest.org/en/stable/explanation/anatomy.html
