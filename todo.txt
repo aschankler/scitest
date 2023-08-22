@@ -1,0 +1,96 @@
+short term todo:
+- rename module + remove opium specific code
+- move to subdir; update run scripts; update config files
+- extract to new repo; submodule
+- check scitest module formatted correctly; build system?
+- update opium test documentation
+
+todo: should the scitest have a __main__ etc (make it runnable without a shim?)
+todo: how should config be handled?
+
+Update query serialization
+--------------------------
+- Documented layout for a test suite specification
+    - query defs, query sets, input conditions, test definitions, ...
+    - Documented schemas for each file type
+    - Better schema for test suite load
+        - "extends" schema for loading test suite (?)
+
+- Streamline query + query set save/load files
+    - This will handle yaml/json encoding and file-wise dereferencing
+    - File-internal dereferencing in test specification too
+
+- Factor save/load into new module
+    - extract query save/load from module
+    - Consistent, reduced API across all file types (query, query set, test, result)
+    - Remove some responsibilities from CLI module; produce more sensible results in load module
+    - Handle both yaml/json backends in a clean way
+
+- Update cli to use new file specifications / load api
+
+- Test suite extends schema
+    - Would probably need some type of templating to be useful
+
+- API questions
+    - can serialize/schema/from_serialized be pushed into a Serializable mixin?
+    - Can the SERIALIZER_KEY fields become class variables?
+    - Why do test suites store component tests as a mapping?
+    - Needing to specify iterable[path] args in io module is cumbersome
+
+- Note: added several linter suppressions; validate these in the future
+
+
+Split repository
+----------------
+- Separate base test modules and opium-specific data
+    - split repositories (load as submodule in opium tests)
+    - needs a name!
+
+- Update linter config
+- Stub out documentation
+- Stub out tests suite
+
+
+Expand query module
+-------------------
+- Remaining to fix in query module (accompany API standardization)
+    - Some aspects of common-type queries need to be fixed
+    - Move away from strictyaml
+    - expand target file specification
+    - Warn if query (class) name is non-unique when registering class?
+    - Maybe refactor Query.run_query to remove the weird base -> implementation -> base calling
+    - Should register for query/query set defs take *args rather than an iterable?
+
+- Array type queries (for actual psp tests)
+    - how to serialize results: link to external file? this breaks the API pretty badly
+
+- Manage the query resolver in a contextmanager
+- Merge of query sets? maybe not needed...
+- Query sets can contain other query sets (via merge)
+    - requires slight schema extension
+- do a better job specifying the output file to search
+
+
+Update CLI and test runners
+---------------------------
+- display suite results as they are run, not after
+    - Requires passing a "printer" to the main runner loop
+    - Main runner loop should not be tied up in CLI code
+
+- Able to make program output persistent?
+    - Able to run queries on existing program output
+
+- config written with attrs (or similar)
+- Explicit entry point for CLI
+- Use std lib `pprint` or `textwrap` in main cli
+
+
+Future plans
+------------
+- Properties check against their default value
+    - prevents need for if (param) is not None: self.param = param boilerplate
+- swap '-' for '_' automatically on property deserialization (in the contexts where needed)
+- More varied exceptions applied consistently
+- Update typing to use 3.11 self type
+- refactor queries with attrs; validators can go into metadata fields
+- TC queries (hard as it duplicates a similar structure an unknown number of times)

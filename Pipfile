@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+attrs = ">=23.*"
+schema = "*"
+strictyaml = "*"
+pyyaml = "*"
+
+[dev-packages]
+ipython = "*"
+mypy = "*"
+isort = "*"
+black = "*"
+pylint = "*"
+flake8 = "*"
+flake8-bugbear = "*"
+flake8-comprehensions = "*"
+flake8-simplify = "*"
+pydocstyle = "*"
+
+[requires]
+python_version = "3.11"

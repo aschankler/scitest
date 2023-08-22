@@ -1,0 +1,21 @@
+# Editor files
+.idea/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+Pipfile.lock
+build/
+dist/
+
+# Environments
+.env
+.venv
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

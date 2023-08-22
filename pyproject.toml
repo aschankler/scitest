@@ -1,0 +1,11 @@
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.pylint.messages_control]
+max-line-length = 88
+disable = [
+    "line-too-long",
+    "missing-docstring",
+    "no-else-return",
+]
