@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.1 (2023-08-25)
+
+### Features
+
+- Project metadata, readme, and build system
+
 ## v0.4.0 (2023-08-21)
 
 Note: files for test configuration and serialized results are incompatible
