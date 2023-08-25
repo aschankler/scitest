@@ -1,3 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scitest"
+description = "Framework to test scientific codes with tolerance on numerical outputs"
+readme = {file="README.md", content-type="text/markdown"}
+authors = [
+    { name="Aaron Schankler", email="ams19@sas.upenn.edu" },
+]
+license = {text = "MIT License"}
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "attrs",
+    "pyyaml",
+    "schema",
+    "strictyaml",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/aschankler/scitest"
+"Bug Tracker" = "https://github.com/aschankler/scitest/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "scitest.__version__"}
+
 [tool.black]
 line-length = 88
 target-version = ['py310', 'py311']

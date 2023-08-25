@@ -7,9 +7,10 @@ __pycache__/
 *$py.class
 
 # Distribution / packaging
-Pipfile.lock
+/Pipfile.lock
 build/
 dist/
+*.egg-info
 
 # Environments
 .env
