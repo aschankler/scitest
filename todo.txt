@@ -1,9 +1,12 @@
 short term todo:
-- rename module + remove opium specific code
-- move to subdir; update run scripts; update config files
-- extract to new repo; submodule
-- check scitest module formatted correctly; build system?
-- update opium test documentation
+- Validate save/load modules; clean io module
+- finish strictyaml purge
+- Build system
+- Linting update
+- Update config parsing, storage, file layout, etc
+    - Doc page about config
+- Array type query
+
 
 todo: should the scitest have a __main__ etc (make it runnable without a shim?)
 todo: how should config be handled?
@@ -42,10 +45,6 @@ Update query serialization
 
 Split repository
 ----------------
-- Separate base test modules and opium-specific data
-    - split repositories (load as submodule in opium tests)
-    - needs a name!
-
 - Update linter config
 - Stub out documentation
 - Stub out tests suite
