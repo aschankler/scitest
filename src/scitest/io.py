@@ -29,12 +29,17 @@ from typing import (
     TypeVar,
 )
 
-import schema
 import yaml
 
 from scitest.exceptions import SerializationError, TestCodeError
-from scitest.query import QuerySetResults, load_query_file
-from scitest.suite import TestCase, TestSuite, TestSuiteResults
+from scitest.query import load_query_file
+from scitest.suite import (
+    TestSuite,
+    TestSuiteResults,
+    load_result_file,
+    load_suite_file,
+    serialize_result_file,
+)
 
 _T = TypeVar("_T")
 
@@ -71,6 +76,31 @@ def _load_serialized_file(file_path: Path) -> Any:
         raise ValueError(f"Unrecognized file type {file_type}")
 
     return parsed
+
+
+def _write_serialized_file(file_path: Path, file_data: Any) -> None:
+    """Serialize a file based on its extension."""
+    file_type = file_path.suffix
+
+    if file_type in (".yml", ".yaml"):
+        try:
+            serialized = yaml.safe_dump(file_data)
+        except yaml.YAMLError as exe:
+            raise SerializationError(
+                f"Could not serialize {file_path.name} as yaml"
+            ) from exe
+    elif file_type == ".json":
+        try:
+            serialized = json.dumps(file_data)
+        except TypeError as exe:
+            raise SerializationError(
+                f"Could not serialize file {file_path.name} as json"
+            ) from exe
+    else:
+        raise ValueError(f"Unrecognized file type {file_type}")
+
+    with open(file_path, "w", encoding="utf8") as f_out:
+        f_out.write(serialized)
 
 
 # ----------------------------------------------------------------------------
@@ -118,8 +148,8 @@ def load_queries(query_dirs: Iterable[Path]) -> None:
         SerializationError: If files are not properly formed
     """
     for query_file in discover_query_files(query_dirs):
-        with open(query_file, encoding="utf8") as query_f:
-            load_query_file(query_f.read(), file_type=query_file.suffix)
+        file_data = _load_serialized_file(query_file)
+        load_query_file(file_data)
 
 
 # ----------------------------------------------------------------------------
@@ -161,38 +191,22 @@ def discover_test_files(
         return {n: p for n, p in test_suites.items() if n in allowed_suites}
 
 
-def _load_suite_file(suite_file: Path) -> TestSuite:
-    """Load a single test suite from file."""
-    # pylint: disable=import-outside-toplevel
-    from contextlib import chdir
-
-    file_schema = schema.Schema(
-        {"suite-name": str, "tests": [TestCase.get_object_schema(strict=False)]}
-    )
-    parsed = _load_serialized_file(suite_file)
-
-    try:
-        parsed = file_schema.validate(parsed)
-    except schema.SchemaError as exe:
-        raise SerializationError(f"Malformed test file {suite_file}") from exe
-
-    with chdir(suite_file.parent):
-        tests = [TestCase.from_serialized(_test_rep) for _test_rep in parsed["tests"]]
-
-    return TestSuite(parsed["suite-name"], {test.name: test for test in tests})
-
-
 def _load_test_dir(
     search_dir: Path,
     suite_request: Optional[Collection[str]] = None,
     recursive: bool = True,
 ) -> dict[str, TestSuite]:
+    # pylint: disable=import-outside-toplevel
+    from contextlib import chdir
+
     # Load tests
     test_suites = {}
     test_files = discover_test_files(search_dir, allowed_suites=suite_request)
 
-    for suite_name, suite_path in test_files.items():
-        test_suites[suite_name] = _load_suite_file(suite_path)
+    with chdir(search_dir):
+        for suite_name, suite_path in test_files.items():
+            parsed = _load_serialized_file(suite_path)
+            test_suites[suite_name] = load_suite_file(parsed)
 
     # Load tests from subdirectories
     if recursive:
@@ -310,48 +324,6 @@ def select_result_data(
     return labeled_paths
 
 
-def _load_one_reference(ref_path: Path) -> TestSuiteResults:
-    """Load results for a single test suite.
-
-    File schema::
-
-        suite-name: <test suite name>
-        version: <version>
-        suite-results:
-          <test name>:
-            - <result set>
-            - <result set>
-            - ...
-          <test name>: ...
-          ...
-    """
-    file_schema = schema.Schema(
-        {"suite-name": str, "version": str, "suite-results": {str: list}}
-    )
-    _, path_name, path_ver = ref_path.stem.split("-", maxsplit=2)
-    parsed = _load_serialized_file(ref_path)
-
-    try:
-        parsed = file_schema.validate(parsed)
-    except schema.SchemaError as exe:
-        raise SerializationError(f"Malformed result file {ref_path.name}") from exe
-
-    assert path_name == parsed["suite-name"]
-    assert path_ver == parsed["version"]
-
-    def _deserialize_case_results(_results: list) -> list[QuerySetResults]:
-        return [QuerySetResults.from_serialized(_q_set_res) for _q_set_res in _results]
-
-    return TestSuiteResults(
-        parsed["suite-name"],
-        parsed["version"],
-        {
-            str(test_name): _deserialize_case_results(results)
-            for test_name, results in parsed["suite-results"].items()
-        },
-    )
-
-
 def load_result_data(
     search_dirs: Iterable[Path],
     version: str,
@@ -380,33 +352,16 @@ def load_result_data(
     if len(to_load) == 0:
         raise TestCodeError("No ref. data found for " + version)
 
+    def _load_one_reference(ref_path: Path) -> TestSuiteResults:
+        """Load results for a single test suite."""
+        _, path_name, path_ver = ref_path.stem.split("-", maxsplit=2)
+        parsed = _load_serialized_file(ref_path)
+        suite_results = load_result_file(parsed)
+        assert path_name == suite_results.suite_name
+        assert path_ver == suite_results.version
+        return suite_results
+
     return {suite: _load_one_reference(path) for suite, path in to_load.items()}
-
-
-def _ref_output_name(
-    suite: str, version: str, test_output: bool, file_type: str
-) -> str:
-    out_type = "ref" if not test_output else "test"
-    return f"{out_type}-{suite}-{version}.{file_type}"
-
-
-def _serialize_suite_results(ref_data: TestSuiteResults, file_type: str = "yml") -> str:
-    results = {
-        test_name: [_res.serialize() for _res in test_res]
-        for test_name, test_res in ref_data.results.items()
-    }
-    state = {
-        "suite-name": ref_data.suite_name,
-        "version": ref_data.version,
-        "suite-results": results,
-    }
-
-    if file_type in ("yml", "yaml"):
-        return yaml.safe_dump(state)
-    elif file_type == "json":
-        return json.dumps(state)
-    else:
-        raise ValueError(f"Unrecognized file type {file_type}")
 
 
 def write_reference_data(
@@ -430,9 +385,9 @@ def write_reference_data(
         raise RuntimeError("File blocking output")
 
     for result in ref_data:
-        out_path = out_dir / _ref_output_name(
-            result.suite_name, result.version, test_output, file_type
+        out_type = "ref" if not test_output else "test"
+        out_path = (
+            out_dir / f"{out_type}-{result.suite_name}-{result.version}.{file_type}"
         )
-        out_data = _serialize_suite_results(result, file_type)
-        with open(out_path, "w", encoding="utf8") as f_out:
-            f_out.write(out_data)
+        out_data = serialize_result_file(result)
+        _write_serialized_file(out_path, out_data)

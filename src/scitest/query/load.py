@@ -11,11 +11,9 @@ query-sets:
   ...
 """
 
-import json
 from typing import Any, Mapping, Sequence, TypeAlias
 
 import schema
-import yaml
 
 from scitest.exceptions import SerializationError
 from scitest.query.base import OutputQueryBase, load_query, register_queries
@@ -163,7 +161,7 @@ def parse_query_sets(qset_block: Sequence[SerializedType]) -> dict[str, QuerySet
 
 
 def load_query_file(
-    file_contents: str, *, file_type: str = ".yaml"
+    file_contents: Any,
 ) -> tuple[dict[str, OutputQueryBase], dict[str, QuerySet]]:
     """Load query and query set definitions from file.
 
@@ -173,8 +171,6 @@ def load_query_file(
 
     Args:
         file_contents: Serialized query definitions read from the file
-        file_type: Method to decode `file_contents` to python base types (recognizes
-            json and yaml)
 
     Returns:
         Map of query names to decoded query objects and a map of query set names to
@@ -192,21 +188,8 @@ def load_query_file(
     _null_list = schema.Or(list, schema.Use(_convert_null))
     query_file_schema = schema.Schema({"queries": _null_list, "query-sets": _null_list})
 
-    if file_type in (".yml", ".yaml"):
-        try:
-            parsed = yaml.safe_load(file_contents)
-        except yaml.YAMLError as exe:
-            raise SerializationError("Could not parse query file as yaml") from exe
-    elif file_type == ".json":
-        try:
-            parsed = json.loads(file_contents)
-        except json.JSONDecodeError as exe:
-            raise SerializationError("Could not parse query file as json") from exe
-    else:
-        raise ValueError(f"Unrecognized file type {file_type}")
-
     try:
-        parsed = query_file_schema.validate(parsed)
+        parsed = query_file_schema.validate(file_contents)
     except schema.SchemaError as exe:
         raise SerializationError("Malformed query file") from exe
 
