@@ -1,7 +1,5 @@
 short term todo:
-- Validate save/load modules; clean io module
-- finish strictyaml purge
-- Build system
+- Build system (validate)
 - Linting update
 - Update config parsing, storage, file layout, etc
     - Doc page about config
@@ -13,26 +11,14 @@ todo: how should config be handled?
 
 Update query serialization
 --------------------------
-- Documented layout for a test suite specification
-    - query defs, query sets, input conditions, test definitions, ...
-    - Documented schemas for each file type
-    - Better schema for test suite load
-        - "extends" schema for loading test suite (?)
-
-- Streamline query + query set save/load files
-    - This will handle yaml/json encoding and file-wise dereferencing
-    - File-internal dereferencing in test specification too
+- File-internal dereferencing/"extends" schema for test suite definitions
 
 - Factor save/load into new module
-    - extract query save/load from module
     - Consistent, reduced API across all file types (query, query set, test, result)
+    - Rename module to avoid name conflicts
     - Remove some responsibilities from CLI module; produce more sensible results in load module
-    - Handle both yaml/json backends in a clean way
 
 - Update cli to use new file specifications / load api
-
-- Test suite extends schema
-    - Would probably need some type of templating to be useful
 
 - API questions
     - can serialize/schema/from_serialized be pushed into a Serializable mixin?
@@ -40,12 +26,11 @@ Update query serialization
     - Why do test suites store component tests as a mapping?
     - Needing to specify iterable[path] args in io module is cumbersome
 
-- Note: added several linter suppressions; validate these in the future
 
-
-Split repository
-----------------
+Repository metadata
+-------------------
 - Update linter config
+- Note: added several linter suppressions; validate these in the future
 - Stub out documentation
 - Stub out tests suite
 
@@ -58,6 +43,7 @@ Expand query module
     - expand target file specification
     - Warn if query (class) name is non-unique when registering class?
     - Maybe refactor Query.run_query to remove the weird base -> implementation -> base calling
+        - Consider the case of search region functionality. Not easily implemented by inheritance
     - Should register for query/query set defs take *args rather than an iterable?
 
 - Array type queries (for actual psp tests)

@@ -1,5 +1,18 @@
 # Changelog
 
+
+## v0.4.2 (2024-02-09)
+
+### Features
+
+- Clarify serialized file interface to consistently read both json and yaml files
+
+### Fixes
+
+- Remove superseded descriptor-based property interface
+- Remove `strictyaml` dependency
+
+
 ## v0.4.1 (2023-08-25)
 
 ### Features
