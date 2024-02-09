@@ -201,9 +201,9 @@ def _load_test_dir(
 
     # Load tests
     test_suites = {}
-    test_files = discover_test_files(search_dir, allowed_suites=suite_request)
 
     with chdir(search_dir):
+        test_files = discover_test_files(Path.cwd(), allowed_suites=suite_request)
         for suite_name, suite_path in test_files.items():
             parsed = _load_serialized_file(suite_path)
             test_suites[suite_name] = load_suite_file(parsed)
