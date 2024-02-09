@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 attrs = ">=23.*"
 schema = "*"
-strictyaml = "*"
 pyyaml = "*"
 
 [dev-packages]

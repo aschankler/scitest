@@ -16,10 +16,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Software Development :: Testing",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "attrs",
-    "pyyaml",
     "schema",
     "strictyaml",
 ]
