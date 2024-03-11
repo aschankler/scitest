@@ -54,7 +54,7 @@ def _path_exist_validator(
 
 def _path_field(must_exist: bool = False):
     """Construct a config field that accepts a single path."""
-    validator = _path_exist_validator if must_exist else None
+    validator = attrs.validators.optional(_path_exist_validator) if must_exist else None
     return attrs.field(
         converter=attrs.converters.optional(Path),
         validator=validator,
