@@ -121,7 +121,7 @@ class TestConfig:
             ValueError: If an invalid field is requested
             ConfigError: If a required field is unset
         """
-        valid_fields = attrs.fields_dict(self).keys()
+        valid_fields = attrs.fields_dict(type(self)).keys()
         for field in required_fields:
             if field not in valid_fields:
                 raise ValueError(f"{field!r} is not a valid field name.")
@@ -144,6 +144,13 @@ class TestConfig:
         # TODO: old style formatting does not play well with yaml
         path_str %= fmt_dict
         return Path(path_str).resolve()
+
+    @classmethod
+    def from_namespace(cls, namespace: object) -> Self:
+        """Construct a config from another dataclass-like object."""
+        field_names = attrs.fields_dict(cls).keys()
+        fields = {k: v for k, v in vars(namespace).items() if k in field_names}
+        return cls(**fields)
 
     @classmethod
     def from_file(cls, file: Path) -> Self:

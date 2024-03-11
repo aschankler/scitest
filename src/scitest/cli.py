@@ -473,7 +473,7 @@ def main(args):
     args = parse_args(args)
 
     # Generate configuration
-    conf = TestConfig(**vars(args))
+    conf = TestConfig.from_namespace(args)
     if args.config is not None:
         file_conf = TestConfig.from_file(args.config)
         file_conf.update(conf)
