@@ -8,10 +8,6 @@ import attrs
 import yaml
 
 
-class ConfigError(RuntimeError):
-    pass
-
-
 _T = TypeVar("_T")
 _OptSet: TypeAlias = Optional[set[_T]]
 
@@ -49,7 +45,7 @@ def _path_exist_validator(
     Only applies to absolute paths, so validators should be re-run after paths are resolved.
     """
     if value.is_absolute() and not value.exists():
-        raise ConfigError(f"Path {value!s} does not exist")
+        raise ValueError(f"Path {value!s} does not exist")
 
 
 def _path_field(must_exist: bool = False):
@@ -119,14 +115,14 @@ class TestConfig:
 
         Raises:
             ValueError: If an invalid field is requested
-            ConfigError: If a required field is unset
+            AttributeError: If a required field is unset
         """
         valid_fields = attrs.fields_dict(type(self)).keys()
         for field in required_fields:
             if field not in valid_fields:
                 raise ValueError(f"{field!r} is not a valid field name.")
             if getattr(self, field) is None:
-                raise ConfigError(f"Required field {field!r} is unset.")
+                raise AttributeError(f"Required field {field!r} is unset.")
 
     def update(self, other: Self) -> None:
         """Updates config values from another config object."""
