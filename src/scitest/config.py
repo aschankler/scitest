@@ -86,7 +86,20 @@ def _test_suite_set_field():
 
 @attrs.mutable(kw_only=True, eq=False)
 class TestConfig:
-    """Config object for test code."""
+    """Config object for test code.
+
+    Attributes:
+        test_dirs: directories to search for test suite definitions
+        ref_dirs: directories to search for reference data
+        query_dirs: directories to search for query definitions
+        exe_path: path to program under test
+        test_out: directory to write test results
+        bench_out: directory to write benchmark results when produced
+        ref_ver: use this version as reference. Default is to use the latest
+        cmp_ver: compare this version against the reference
+        out_ver: use this version to stamp the test output
+        test_suites: run only these test suites
+    """
 
     test_dirs: Optional[set[Path]] = _path_set_field()
     ref_dirs: Optional[set[Path]] = _path_set_field(all_exist=True)
