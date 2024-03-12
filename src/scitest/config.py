@@ -105,11 +105,6 @@ class TestConfig:
     _str_vars = ("ref_ver", "cmp_ver", "out_ver")
     _str_group_vars = ("test_suites",)
 
-    def __str__(self):
-        # type: () -> str
-        # TODO: print function
-        raise NotImplementedError
-
     def check_fields(self, required_fields: Iterable[str]) -> None:
         """Raise error if any required fields are unset.
 
@@ -117,6 +112,8 @@ class TestConfig:
             ValueError: If an invalid field is requested
             AttributeError: If a required field is unset
         """
+        # PC does not type attrs classes correctly
+        # noinspection PyTypeChecker
         valid_fields = attrs.fields_dict(type(self)).keys()
         for field in required_fields:
             if field not in valid_fields:
@@ -126,10 +123,12 @@ class TestConfig:
 
     def update(self, other: Self) -> None:
         """Updates config values from another config object."""
-        for name in attrs.fields_dict(other):
+        for name in attrs.fields_dict(type(other)):
             # Values in other override (unless the field overrides the merge method)
             if getattr(other, name) is not None:
                 setattr(self, name, getattr(other, name))
+        # noinspection PyTypeChecker
+        attrs.validate(self)
 
     @staticmethod
     def _parse_path(path_str, conf_root=None):
@@ -144,6 +143,7 @@ class TestConfig:
     @classmethod
     def from_namespace(cls, namespace: object) -> Self:
         """Construct a config from another dataclass-like object."""
+        # noinspection PyTypeChecker
         field_names = attrs.fields_dict(cls).keys()
         fields = {k: v for k, v in vars(namespace).items() if k in field_names}
         return cls(**fields)
