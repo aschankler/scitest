@@ -2,14 +2,15 @@
 
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Self, TypeAlias, TypeVar, Union
+from typing import Optional, Self, TypeAlias, TypeVar
 
 import attrs
 import yaml
 
-
 _T = TypeVar("_T")
 _OptSet: TypeAlias = Optional[set[_T]]
+
+CONFIG_TYPE_KEY = "__config_type"
 
 
 # Note: currently `Attribute` is only generic in the stubs, so the type hint is escaped
@@ -54,6 +55,7 @@ def _path_field(must_exist: bool = False):
     return attrs.field(
         converter=attrs.converters.optional(Path),
         validator=validator,
+        metadata={CONFIG_TYPE_KEY: "path"},
     )
 
 
@@ -69,6 +71,7 @@ def _path_set_field(all_exist: bool = False):
         converter=attrs.converters.optional(lambda paths: set(Path(p) for p in paths)),
         validator=validator,
         on_setattr=_merge_setter,
+        metadata={CONFIG_TYPE_KEY: "path_set"},
     )
 
 
@@ -112,12 +115,6 @@ class TestConfig:
     out_ver: Optional[str] = _version_field()
     test_suites: Optional[set[str]] = _test_suite_set_field()
 
-    # Private fields
-    _path_vars = ("exe_path", "test_out", "bench_out")
-    _path_group_vars = ("test_dirs", "ref_dirs", "query_dirs")
-    _str_vars = ("ref_ver", "cmp_ver", "out_ver")
-    _str_group_vars = ("test_suites",)
-
     def check_fields(self, required_fields: Iterable[str]) -> None:
         """Raise error if any required fields are unset.
 
@@ -134,6 +131,38 @@ class TestConfig:
             if getattr(self, field) is None:
                 raise AttributeError(f"Required field {field!r} is unset.")
 
+    @staticmethod
+    def _root_path(init_path: Path | str, relative_to: Optional[Path] = None) -> Path:
+        updated_path = Path(init_path)
+        if relative_to is not None and not updated_path.is_absolute():
+            # Resolve relative paths if possible
+            updated_path = relative_to / updated_path
+        return updated_path
+
+    def _resolve_path_field(self, field_name: str, root_point: Path) -> None:
+        old_path = getattr(self, field_name)
+        if old_path is not None:
+            setattr(self, field_name, self._root_path(old_path, root_point))
+
+    def _resolve_path_set_field(self, field_name: str, root_point: Path) -> None:
+        old_set = getattr(self, field_name)
+        if old_set is None:
+            return
+        new_set = set(self._root_path(_path, root_point) for _path in old_set)
+        # First explicitly unset the value to avoid the merge setter
+        setattr(self, field_name, None)
+        setattr(self, field_name, new_set)
+
+    def resolve_paths(self, root_point: Path) -> None:
+        """Resolve relative paths by rooting at a provided directory."""
+        # noinspection PyTypeChecker
+        for attrib in attrs.fields(type(self)):
+            if CONFIG_TYPE_KEY in attrib.metadata:
+                if attrib.metadata[CONFIG_TYPE_KEY] == "path":
+                    self._resolve_path_field(attrib.name, root_point)
+                elif attrib.metadata[CONFIG_TYPE_KEY] == "path_set":
+                    self._resolve_path_set_field(attrib.name, root_point)
+
     def update(self, other: Self) -> None:
         """Updates config values from another config object."""
         for name in attrs.fields_dict(type(other)):
@@ -142,16 +171,6 @@ class TestConfig:
                 setattr(self, name, getattr(other, name))
         # noinspection PyTypeChecker
         attrs.validate(self)
-
-    @staticmethod
-    def _parse_path(path_str, conf_root=None):
-        # type: (str, Optional[Union[str, Path]]) -> Path
-        fmt_dict = {"program_root": Path(__file__).resolve().parent}
-        if conf_root is not None:
-            fmt_dict["conf_root"] = str(conf_root)
-        # TODO: old style formatting does not play well with yaml
-        path_str %= fmt_dict
-        return Path(path_str).resolve()
 
     @classmethod
     def from_namespace(cls, namespace: object) -> Self:
@@ -165,12 +184,9 @@ class TestConfig:
     def from_file(cls, file: Path) -> Self:
         """Construct config object from config file."""
         # Load the config file
-        conf_root = file.parent
+        conf_root = file.parent.resolve()
         with open(file) as _fh:
             file_conf = yaml.safe_load(_fh)
-        for k, v in file_conf.items():
-            if k in cls._path_vars and v is not None:
-                file_conf[k] = cls._parse_path(v, conf_root=conf_root)
-            elif k in cls._path_group_vars:
-                file_conf[k] = set(cls._parse_path(p, conf_root=conf_root) for p in v)
-        return cls(**file_conf)
+        new_conf = cls(**file_conf)
+        new_conf.resolve_paths(conf_root)
+        return new_conf

@@ -18,8 +18,8 @@ Test search directories
 Several directories are searched for files that describe the testing protocol. Each field
 may contain a list of directories to search. Results from all directories are used, but
 the directories may not contain conflicting definitions.
-The special string ``%(conf_root)s`` is substituted with the directory
-containing the configuration file.
+Relative paths are interpreted to be relative to the directory containing the
+configuration file.
 
 query_dirs
     List of directories that are searched for query definitions
@@ -37,8 +37,8 @@ Output directories
 
 Records of test runs are recorded in the specified directories. Results are overwritten
 if a record with the same version already exists.
-The special string ``%(conf_root)s`` is again substituted with the directory
-containing the configuration file.
+Relative paths are interpreted to be relative to the directory containing the
+configuration file.
 
 test_out
     Test results are written to this directory
