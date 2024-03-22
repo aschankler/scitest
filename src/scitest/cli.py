@@ -4,6 +4,7 @@ from argparse import ArgumentParser, Namespace
 from collections.abc import Sequence
 from pathlib import Path
 
+from scitest import __version__
 from scitest.config import TestConfig
 from scitest.tester import (
     run_bench_mode,
@@ -13,10 +14,14 @@ from scitest.tester import (
 )
 
 
-def parse_args(args: Sequence[str]) -> Namespace:
-    """Definition of the testing CLI."""
+def _make_argument_parser() -> ArgumentParser:
+    """Build CLI interface."""
     parser = ArgumentParser()
-    parser.add_argument("--verbose", "-v", action="store_true")
+    parser.add_argument(
+        "--version", "-V", action="version", version=f"%(prog)s {__version__}"
+    )
+
+    parser.add_argument("--verbose", "-v", action="count", default=0)
 
     # Choose run mode
     mode_group = parser.add_mutually_exclusive_group()
@@ -30,15 +35,13 @@ def parse_args(args: Sequence[str]) -> Namespace:
     mode_group.add_argument("--clean", const="clean", action="store_const", dest="mode")
 
     # Where to search for configuration
-    test_dir = Path(__file__).resolve().parent
     parser.add_argument(
         "--config",
         "--conf",
         type=Path,
-        default=test_dir.joinpath("config.yml"),
         dest="config",
         metavar="PATH",
-        help="Path to config file.",
+        help="Path to configuration file.",
     )
     parser.add_argument(
         "--exe",
@@ -51,9 +54,9 @@ def parse_args(args: Sequence[str]) -> Namespace:
         "--add-queries",
         action="append",
         type=Path,
-        dest="query_files",
-        metavar="PATH",
-        help="Query set definitions.",
+        dest="query_dirs",
+        metavar="DIR",
+        help="Add directory for query set definitions.",
     )
     parser.add_argument(
         "--add-test-dir",
@@ -61,7 +64,7 @@ def parse_args(args: Sequence[str]) -> Namespace:
         type=Path,
         dest="test_dirs",
         metavar="DIR",
-        help="Directory to search for test definitions.",
+        help="Add directory to search for test definitions.",
     )
     parser.add_argument(
         "--add-ref-dir",
@@ -70,7 +73,7 @@ def parse_args(args: Sequence[str]) -> Namespace:
         type=Path,
         dest="ref_dirs",
         metavar="DIR",
-        help="Directory to search for reference data.",
+        help="Add directory to search for reference data.",
     )
 
     # Which tests to run
@@ -84,14 +87,14 @@ def parse_args(args: Sequence[str]) -> Namespace:
 
     # Directories for output
     parser.add_argument(
-        "--test-out",
+        "--test-out-dir",
         type=Path,
         dest="test_out",
         metavar="DIR",
         help="Directory to write test output.",
     )
     parser.add_argument(
-        "--bench-out",
+        "--bench-out-dir",
         type=Path,
         dest="bench_out",
         metavar="DIR",
@@ -118,27 +121,43 @@ def parse_args(args: Sequence[str]) -> Namespace:
         help="Version for output test/benchmark data.",
     )
 
+    return parser
+
+
+def parse_args(args: Sequence[str]) -> Namespace:
+    """Definition of the testing CLI."""
+    parser = _make_argument_parser()
+
     # Set default options
-    args = parser.parse_args(args)
-    if args.mode is None:
-        args.mode = "test"
+    parsed = parser.parse_args(args)
+    if parsed.mode is None:
+        parsed.mode = "test"
 
-    return args
+    return parsed
 
 
-def main(args: Sequence[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     # Parse arguments
-    args = parse_args(args)
+    args = parse_args(argv)
 
     # Generate configuration
     conf = TestConfig.from_namespace(args)
     if args.config is not None:
-        file_conf = TestConfig.from_file(args.config)
+        conf_file = args.config
+    elif Path.cwd().joinpath("config.yml").exists():
+        conf_file = Path.cwd().joinpath("config.yml")
+    else:
+        conf_file = None
+
+    if conf_file is not None:
+        file_conf = TestConfig.from_file(conf_file)
         file_conf.update(conf)
         conf = file_conf
 
     # TODO: better print of configuration (maybe an option to print and exit)
-    print(repr(conf))
+    is_verbose = args.verbose > 0
+    if is_verbose:
+        print(repr(conf))
 
     # TODO: -vv option (print out data on each query)
     # TODO: print out relevant version choice at the start of the run
@@ -147,15 +166,15 @@ def main(args: Sequence[str]) -> None:
         conf.check_fields(
             ("exe_path", "test_out", "test_dirs", "ref_dirs", "query_dirs")
         )
-        run_test_mode(conf, verbose=args.verbose)
+        run_test_mode(conf, verbose=is_verbose)
     elif args.mode == "bench":
         conf.check_fields(("exe_path", "bench_out", "test_dirs", "query_dirs"))
-        run_bench_mode(conf, verbose=args.verbose)
+        run_bench_mode(conf, verbose=is_verbose)
     elif args.mode == "compare":
         conf.check_fields(("ref_dirs", "ref_ver", "cmp_ver"))
-        run_compare_mode(conf, verbose=args.verbose)
+        run_compare_mode(conf, verbose=is_verbose)
     elif args.mode == "clean":
         conf.check_fields(("test_out",))
         run_clean_mode(conf)
     else:
-        raise RuntimeError("Unknown mode {}".format(args.mode))
+        raise RuntimeError(f"Unknown mode {args.mode}")
