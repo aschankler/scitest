@@ -13,6 +13,19 @@ from scitest.tester import (
     run_test_mode,
 )
 
+PARSER_FIELDS = (
+    "test_dirs",
+    "ref_dirs",
+    "query_dirs",
+    "exe_path",
+    "test_out",
+    "bench_out",
+    "ref_ver",
+    "cmp_ver",
+    "out_ver",
+    "test_suites",
+)
+
 
 def _make_argument_parser() -> ArgumentParser:
     """Build CLI interface."""
@@ -141,7 +154,7 @@ def main(argv: Sequence[str]) -> None:
     args = parse_args(argv)
 
     # Generate configuration
-    conf = TestConfig.from_namespace(args)
+    conf = TestConfig.from_namespace(args, PARSER_FIELDS, root_path=Path.cwd())
     if args.config is not None:
         conf_file = args.config
     elif Path.cwd().joinpath("config.yml").exists():

@@ -1,6 +1,6 @@
 """Parse and validate config."""
 
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable, Mapping
 from pathlib import Path
 from typing import Optional, Self, TypeAlias, TypeVar
 
@@ -45,6 +45,7 @@ def _path_exist_validator(
 
     Only applies to absolute paths, so validators should be re-run after paths are resolved.
     """
+    # pylint: disable=unused-argument
     if value.is_absolute() and not value.exists():
         raise ValueError(f"Path {value!s} does not exist")
 
@@ -53,6 +54,7 @@ def _path_field(must_exist: bool = False):
     """Construct a config field that accepts a single path."""
     validator = attrs.validators.optional(_path_exist_validator) if must_exist else None
     return attrs.field(
+        default=None,
         converter=attrs.converters.optional(Path),
         validator=validator,
         metadata={CONFIG_TYPE_KEY: "path"},
@@ -68,7 +70,7 @@ def _path_set_field(all_exist: bool = False):
     )
     return attrs.field(
         default=None,
-        converter=attrs.converters.optional(lambda paths: set(Path(p) for p in paths)),
+        converter=attrs.converters.optional(lambda paths: {Path(p) for p in paths}),
         validator=validator,
         on_setattr=_merge_setter,
         metadata={CONFIG_TYPE_KEY: "path_set"},
@@ -148,7 +150,7 @@ class TestConfig:
         old_set = getattr(self, field_name)
         if old_set is None:
             return
-        new_set = set(self._root_path(_path, root_point) for _path in old_set)
+        new_set = {self._root_path(_path, root_point) for _path in old_set}
         # First explicitly unset the value to avoid the merge setter
         setattr(self, field_name, None)
         setattr(self, field_name, new_set)
@@ -173,20 +175,38 @@ class TestConfig:
         attrs.validate(self)
 
     @classmethod
-    def from_namespace(cls, namespace: object) -> Self:
+    def from_mapping(
+        cls, mapping: Mapping[str, str], *, root_path: Optional[Path] = None
+    ) -> Self:
+        """Construct config from a mapping."""
+        new_conf = cls(**mapping)
+        if root_path is not None:
+            new_conf.resolve_paths(root_path)
+        return new_conf
+
+    @classmethod
+    def from_namespace(
+        cls,
+        namespace: object,
+        use_fields: Optional[Collection[str]],
+        *,
+        root_path: Optional[Path] = None,
+    ) -> Self:
         """Construct a config from another dataclass-like object."""
         # noinspection PyTypeChecker
         field_names = attrs.fields_dict(cls).keys()
-        fields = {k: v for k, v in vars(namespace).items() if k in field_names}
-        return cls(**fields)
+        if use_fields is not None:
+            if any(_name not in field_names for _name in use_fields):
+                raise ValueError(f"Unknown fields in {use_fields}")
+            field_names = use_fields
+        config_dict = {k: v for k, v in vars(namespace).items() if k in field_names}
+        return cls.from_mapping(config_dict, root_path=root_path)
 
     @classmethod
     def from_file(cls, file: Path) -> Self:
         """Construct config object from config file."""
         # Load the config file
         conf_root = file.parent.resolve()
-        with open(file) as _fh:
+        with open(file, encoding="utf8") as _fh:
             file_conf = yaml.safe_load(_fh)
-        new_conf = cls(**file_conf)
-        new_conf.resolve_paths(conf_root)
-        return new_conf
+        return cls.from_mapping(file_conf, root_path=conf_root)
