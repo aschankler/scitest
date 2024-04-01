@@ -137,9 +137,11 @@ class OutputQueryBase(Serializable, Generic[_T], ABC):
             return object
 
         properties = {
-            schema.Optional(attr.name)
-            if attr.default is not attrs.NOTHING
-            else attr.name: _value_schema(attr)
+            (
+                schema.Optional(attr.name)
+                if attr.default is not attrs.NOTHING
+                else attr.name
+            ): _value_schema(attr)
             for attr in attrs.fields(cls)
             if not (
                 QUERY_EXCLUDE_KEY in attr.metadata and attr.metadata[QUERY_EXCLUDE_KEY]

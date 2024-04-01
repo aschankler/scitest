@@ -149,9 +149,11 @@ class QuantityTypeBase(Serializable, Generic[_T], ABC):
             return object
 
         properties = {
-            schema.Optional(attr.name)
-            if attr.default is not attrs.NOTHING
-            else attr.name: _value_schema(attr)
+            (
+                schema.Optional(attr.name)
+                if attr.default is not attrs.NOTHING
+                else attr.name
+            ): _value_schema(attr)
             for attr in attrs.fields(cls)
         }
         if not strict:

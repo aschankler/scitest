@@ -161,7 +161,9 @@ class TestConfig:
         for attrib in attrs.fields(type(self)):
             val = getattr(self, attrib.name)
             length_hint = len(attrib.name) + 2
-            lines.append(f"{attrib.name}: {self._pprint_value(attrib, val, length_hint)}")
+            lines.append(
+                f"{attrib.name}: {self._pprint_value(attrib, val, length_hint)}"
+            )
         return "\n".join(lines)
 
     def check_fields(self, required_fields: Iterable[str]) -> None:
