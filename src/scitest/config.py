@@ -2,7 +2,7 @@
 
 from collections.abc import Collection, Iterable, Mapping
 from pathlib import Path
-from typing import Optional, Self, TypeAlias, TypeVar
+from typing import Any, Optional, Self, TypeAlias, TypeVar
 
 import attrs
 import yaml
@@ -86,6 +86,7 @@ def _test_suite_set_field():
             attrs.validators.deep_iterable(attrs.validators.matches_re(r"\w+"))
         ),
         on_setattr=_merge_setter,
+        metadata={CONFIG_TYPE_KEY: "test_suite_set"},
     )
 
 
@@ -116,6 +117,52 @@ class TestConfig:
     cmp_ver: Optional[str] = _version_field()
     out_ver: Optional[str] = _version_field()
     test_suites: Optional[set[str]] = _test_suite_set_field()
+
+    @staticmethod
+    def _pprint_value(attrib: attrs.Attribute, value: Any, indent: int) -> str:
+
+        def _wrap_sequence(_str_seq: Iterable[str]) -> str:
+            length_hint = 90 - indent
+            _lines = []
+            _this_line = []
+            _current_length = 0
+            for _entry in _str_seq:
+                if len(_entry) + _current_length + 2 < length_hint:
+                    _this_line.append(_entry)
+                    _current_length += len(_entry) + 2
+                    continue
+                if not _this_line:
+                    # If the buffer is empty, then we write the entry on its own line
+                    _lines.append(_entry)
+                    continue
+                # Must empty the buffer
+                _lines.append(", ".join(_this_line))
+                # ... and save the current entry
+                _this_line = [_entry]
+                _current_length = len(_entry) + 2
+            # Finalize the buffers
+            if _this_line:
+                _lines.append(", ".join(_this_line))
+            # Merge output to single line
+            return "[" + f",\n{indent * ' '}".join(_lines) + "]"
+
+        if value is None:
+            return ""
+        if CONFIG_TYPE_KEY in attrib.metadata:
+            if attrib.metadata[CONFIG_TYPE_KEY] == "path_set":
+                return _wrap_sequence((str(path) for path in value))
+            if attrib.metadata[CONFIG_TYPE_KEY] == "test_suite_set":
+                return _wrap_sequence(value)
+        return str(value)
+
+    def __str__(self) -> str:
+        lines = []
+        # noinspection PyTypeChecker
+        for attrib in attrs.fields(type(self)):
+            val = getattr(self, attrib.name)
+            length_hint = len(attrib.name) + 2
+            lines.append(f"{attrib.name}: {self._pprint_value(attrib, val, length_hint)}")
+        return "\n".join(lines)
 
     def check_fields(self, required_fields: Iterable[str]) -> None:
         """Raise error if any required fields are unset.

@@ -46,6 +46,9 @@ def _make_argument_parser() -> ArgumentParser:
         "--compare", const="compare", action="store_const", dest="mode"
     )
     mode_group.add_argument("--clean", const="clean", action="store_const", dest="mode")
+    parser.add_argument(
+        "--check-config", action="store_true", help="Validate configuration and exit"
+    )
 
     # Where to search for configuration
     parser.add_argument(
@@ -167,10 +170,11 @@ def main(argv: Sequence[str]) -> None:
         file_conf.update(conf)
         conf = file_conf
 
-    # TODO: better print of configuration (maybe an option to print and exit)
     is_verbose = args.verbose > 0
-    if is_verbose:
-        print(repr(conf))
+    if is_verbose or args.check_config:
+        print(str(conf))
+    if args.check_config:
+        return
 
     # TODO: -vv option (print out data on each query)
     # TODO: print out relevant version choice at the start of the run
