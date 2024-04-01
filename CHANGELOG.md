@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.5.1 (2024-04-01)
+
+Note: Some CLI options have changed
+
+### Features
+
+- Improve printing of configuration settings
+- Add module-level CLI entry point
+
+### Fixes
+
+- Update CLI options and help text
+- All config fields should be optional until tset run is started
+
+
 ## v0.5.0 (2024-03-20)
 
 Note: old configs using the `%(conf_root)` syntax are no longer supported
