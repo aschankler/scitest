@@ -1,6 +1,7 @@
 """Parsing and sorting for benchmark version stamps."""
 
 import re
+from abc import ABC, abstractmethod
 from functools import total_ordering
 from typing import ClassVar, Iterable, Self, TypeVar, Union
 
@@ -37,7 +38,7 @@ def version_from_stamp(stamp: str) -> "Version":
 
 
 @total_ordering
-class Version:
+class Version(ABC):
     """Parses and orders different benchmark/test version strings."""
 
     priority: ClassVar[int] = -1
@@ -48,10 +49,12 @@ class Version:
         self.components = tuple(args)
 
     @property
+    @abstractmethod
     def stamp(self) -> str:
         raise NotImplementedError
 
     @classmethod
+    @abstractmethod
     def from_stamp(cls, stamp: str) -> Self:
         raise NotImplementedError
 
@@ -59,7 +62,7 @@ class Version:
         if not isinstance(other, Version):
             return NotImplemented
         if self.priority == other.priority:
-            return self._cls_eq(other)
+            return self.cls_eq(other)
         else:
             return False
 
@@ -68,16 +71,15 @@ class Version:
             return NotImplemented
         # Instances of different subclasses are sorted by class priority
         if self.priority == other.priority:
-            return self._cls_lt(other)
+            return self.cls_lt(other)
         else:
             return self.priority < other.priority
 
-    def _cls_eq(self, other):
-        # type: (_T, _T) -> bool
+    def cls_eq(self, other: Self) -> bool:
         return self.components == other.components
 
-    def _cls_lt(self, other):
-        # type: (_T, _T) -> bool
+    @abstractmethod
+    def cls_lt(self, other: Self) -> bool:
         raise NotImplementedError
 
     def __str__(self) -> str:
@@ -126,7 +128,7 @@ class DateVersion(Version):
         today = date.today()
         return cls(today.year, today.month, today.day)
 
-    def _cls_lt(self, other: Self) -> bool:
+    def cls_lt(self, other: Self) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError
         return self.components < other.components
@@ -185,13 +187,13 @@ class SemVersion(Version):
 
         return cls(*components)
 
-    def _cls_eq(self, other: Self) -> bool:
+    def cls_eq(self, other: Self) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError
         # Ignore build metadata in comparison
         return self.components[:4] == other.components[:4]
 
-    def _cls_lt(self, other: Self) -> bool:
+    def cls_lt(self, other: Self) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError
         # Compare version core
