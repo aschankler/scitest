@@ -2,7 +2,7 @@
 
 import re
 from functools import total_ordering
-from typing import Dict, Iterable, List, Type, TypeVar, Union
+from typing import ClassVar, Iterable, Self, TypeVar, Union
 
 
 class VersionError(ValueError):
@@ -13,11 +13,10 @@ _T = TypeVar("_T", bound="Version")
 
 
 # Global registry mapping stamp prefixes to version classes
-_version_formats: Dict[str, Type["Version"]] = {}
+_version_formats: dict[str, type["Version"]] = {}
 
 
-def register_version_fmt(cls):
-    # type: (Type[Version]) -> Type[Version]
+def register_version_fmt(cls: type["Version"]) -> type["Version"]:
     """Register a version format class in a global registry.
 
     Raises:
@@ -29,8 +28,7 @@ def register_version_fmt(cls):
     return cls
 
 
-def version_from_stamp(stamp):
-    # type: (str) -> Version
+def version_from_stamp(stamp: str) -> "Version":
     """Try to parse a version string using registered version formats."""
     for prefix, ver_cls in _version_formats.items():
         if stamp.startswith(prefix):
@@ -42,25 +40,22 @@ def version_from_stamp(stamp):
 class Version:
     """Parses and orders different benchmark/test version strings."""
 
-    priority: int = -1
-    stamp_prefix = ""
+    priority: ClassVar[int] = -1
+    stamp_prefix: ClassVar[str] = ""
 
     def __init__(self, *args):
         # type: (*Union[str, int, None]) -> None
         self.components = tuple(args)
 
     @property
-    def stamp(self):
-        # type: () -> str
+    def stamp(self) -> str:
         raise NotImplementedError
 
     @classmethod
-    def from_stamp(cls, stamp):
-        # type: (Type[_T], str) -> _T
+    def from_stamp(cls, stamp: str) -> Self:
         raise NotImplementedError
 
-    def __eq__(self, other):
-        # type: (object) -> bool
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Version):
             return NotImplemented
         if self.priority == other.priority:
@@ -68,8 +63,7 @@ class Version:
         else:
             return False
 
-    def __lt__(self, other):
-        # type: (Version) -> bool
+    def __lt__(self, other: object) -> bool:
         if not isinstance(other, Version):
             return NotImplemented
         # Instances of different subclasses are sorted by class priority
@@ -86,12 +80,10 @@ class Version:
         # type: (_T, _T) -> bool
         raise NotImplementedError
 
-    def __str__(self):
-        # type: () -> str
+    def __str__(self) -> str:
         return self.stamp
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         arg_str = ", ".join(map(repr, self.components))
         return "{cls}({args})".format(cls=self.__class__.__name__, args=arg_str)
 
@@ -115,13 +107,11 @@ class DateVersion(Version):
         super().__init__(year, month, day)
 
     @property
-    def stamp(self):
-        # type: () -> str
+    def stamp(self) -> str:
         return "d{:04d}-{:02d}-{:02d}".format(self.year, self.month, self.day)
 
     @classmethod
-    def from_stamp(cls, stamp):
-        # type: (str) -> DateVersion
+    def from_stamp(cls, stamp: str) -> Self:
         if not stamp.startswith(cls.stamp_prefix):
             raise VersionError("Malformed stamp " + stamp)
         match = cls._date_ver_re.match(stamp[1:])
@@ -130,15 +120,13 @@ class DateVersion(Version):
         return cls(*map(int, match.groups()))
 
     @classmethod
-    def today(cls):
-        # type: () -> DateVersion
+    def today(cls) -> Self:
         from datetime import date
 
         today = date.today()
         return cls(today.year, today.month, today.day)
 
-    def _cls_lt(self, other):
-        # type: (DateVersion) -> bool
+    def _cls_lt(self, other: Self) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError
         return self.components < other.components
@@ -171,8 +159,7 @@ class SemVersion(Version):
         super().__init__(*args)
 
     @property
-    def stamp(self):
-        # type: () -> str
+    def stamp(self) -> str:
         version_string = "v{!s}.{!s}.{!s}".format(*self.version_core)
         if self.pre_release is not None:
             version_string += "-{}".format(self.pre_release)
@@ -181,14 +168,13 @@ class SemVersion(Version):
         return version_string
 
     @classmethod
-    def from_stamp(cls, stamp):
-        # type: (str) -> SemVersion
+    def from_stamp(cls, stamp: str) -> Self:
         if not stamp.startswith(cls.stamp_prefix):
             raise VersionError("Malformed stamp {}".format(stamp))
         match = cls._sem_ver_re.match(stamp[1:])
         if not match:
             raise VersionError("Bad semantic version {}".format(stamp[1:]))
-        components: List[Union[str, int, None]] = [
+        components: list[Union[str, int, None]] = [
             int(match.group(k)) for k in ("major", "minor", "patch")
         ]
         for k in ("prerelease", "buildmetadata"):
@@ -199,15 +185,13 @@ class SemVersion(Version):
 
         return cls(*components)
 
-    def _cls_eq(self, other):
-        # type: (SemVersion) -> bool
+    def _cls_eq(self, other: Self) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError
         # Ignore build metadata in comparison
         return self.components[:4] == other.components[:4]
 
-    def _cls_lt(self, other):
-        # type: (SemVersion) -> bool
+    def _cls_lt(self, other: Self) -> bool:
         if not isinstance(other, self.__class__):
             raise TypeError
         # Compare version core
@@ -228,8 +212,7 @@ class SemVersion(Version):
             return self._compare_pre_release(self.pre_release, other.pre_release)
 
     @classmethod
-    def _compare_pre_release(cls, this_pr, other_pr):
-        # type: (str, str) -> bool
+    def _compare_pre_release(cls, this_pr: str, other_pr: str) -> bool:
         this_h, _, this_rest = this_pr.partition(".")
         other_h, _, other_rest = other_pr.partition(".")
         if this_h != other_h:
@@ -253,7 +236,6 @@ class SemVersion(Version):
             return cls._compare_pre_release(this_rest, other_rest)
 
 
-def get_latest_version(version_strings):
-    # type: (Iterable[str]) -> str
+def get_latest_version(version_strings: Iterable[str]) -> str:
     versions = [version_from_stamp(v_str) for v_str in version_strings]
     return max(versions).stamp
