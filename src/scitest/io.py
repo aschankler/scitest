@@ -280,7 +280,8 @@ def discover_result_files(
         result_paths = chain(result_paths, _find_paths("test"))
 
     def _get_result_name(_res_path: Path) -> tuple[str, str, Path]:
-        _, name, ver = _res_path.stem.split("-", maxsplit=2)
+        _, _tag = _res_path.stem.split("-", maxsplit=1)
+        name, ver = _tag.rsplit("-", maxsplit=1)
         return name, ver, _res_path
 
     return [_get_result_name(p) for p in result_paths]
