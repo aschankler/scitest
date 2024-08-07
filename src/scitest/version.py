@@ -96,7 +96,7 @@ class DateVersion(Version):
 
     priority = 5
     stamp_prefix = "d"
-    _date_ver_re = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+    _date_ver_re = re.compile(r"^(\d{4})_(\d{2})_(\d{2})$")
 
     def __init__(self, *args):
         # type: (*Union[str, int]) -> None
@@ -110,7 +110,7 @@ class DateVersion(Version):
 
     @property
     def stamp(self) -> str:
-        return f"d{self.year:04d}-{self.month:02d}-{self.day:02d}"
+        return f"d{self.year:04d}_{self.month:02d}_{self.day:02d}"
 
     @classmethod
     def from_stamp(cls, stamp: str) -> Self:
