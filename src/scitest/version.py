@@ -24,7 +24,7 @@ def register_version_fmt(cls: type["Version"]) -> type["Version"]:
         ValueError: If the version format uses the same stamp prefix as one already registered
     """
     if cls.stamp_prefix in _version_formats:
-        raise ValueError("Version prefix '{}' already in use".format(cls.stamp_prefix))
+        raise ValueError(f"Version prefix '{cls.stamp_prefix}' already in use")
     _version_formats[cls.stamp_prefix] = cls
     return cls
 
@@ -34,7 +34,7 @@ def version_from_stamp(stamp: str) -> "Version":
     for prefix, ver_cls in _version_formats.items():
         if stamp.startswith(prefix):
             return ver_cls.from_stamp(stamp)
-    raise VersionError("Stamp '{}' matched no known version formats".format(stamp))
+    raise VersionError(f"Stamp '{stamp}' matched no known version formats")
 
 
 @total_ordering
@@ -87,7 +87,7 @@ class Version(ABC):
 
     def __repr__(self) -> str:
         arg_str = ", ".join(map(repr, self.components))
-        return "{cls}({args})".format(cls=self.__class__.__name__, args=arg_str)
+        return f"{self.__class__.__name__}({arg_str})"
 
 
 @register_version_fmt
@@ -110,7 +110,7 @@ class DateVersion(Version):
 
     @property
     def stamp(self) -> str:
-        return "d{:04d}-{:02d}-{:02d}".format(self.year, self.month, self.day)
+        return f"d{self.year:04d}-{self.month:02d}-{self.day:02d}"
 
     @classmethod
     def from_stamp(cls, stamp: str) -> Self:
@@ -164,18 +164,18 @@ class SemVersion(Version):
     def stamp(self) -> str:
         version_string = "v{!s}.{!s}.{!s}".format(*self.version_core)
         if self.pre_release is not None:
-            version_string += "-{}".format(self.pre_release)
+            version_string += f"-{self.pre_release}"
         if self.build_meta is not None:
-            version_string += "+{}".format(self.build_meta)
+            version_string += f"+{self.build_meta}"
         return version_string
 
     @classmethod
     def from_stamp(cls, stamp: str) -> Self:
         if not stamp.startswith(cls.stamp_prefix):
-            raise VersionError("Malformed stamp {}".format(stamp))
+            raise VersionError(f"Malformed stamp {stamp}")
         match = cls._sem_ver_re.match(stamp[1:])
         if not match:
-            raise VersionError("Bad semantic version {}".format(stamp[1:]))
+            raise VersionError(f"Bad semantic version {stamp[1:]}")
         components: list[Union[str, int, None]] = [
             int(match.group(k)) for k in ("major", "minor", "patch")
         ]
