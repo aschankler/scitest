@@ -1,7 +1,9 @@
 """A test fixture runs the program under test and manages queries on the results."""
 
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from typing import Any, Mapping, Optional, Sequence
+
+import attrs
 
 from scitest.exceptions import QueryError, TestCodeError
 from scitest.query import OutputQueryBase, QueryResult
@@ -31,6 +33,12 @@ class _PushDir:
         os.chdir(self.old_dir)
 
 
+def _concrete_path(path_in: str | Path) -> Path:
+    """Converter to ensure all paths are concrete."""
+    return Path(path_in).resolve()
+
+
+@attrs.define(eq=False)
 class ExeTestFixture:
     """Test fixture handles setting up and running the program under test.
 
@@ -39,28 +47,29 @@ class ExeTestFixture:
         scratch_dir: Directory to run the program in
     """
 
-    def __init__(self, exe_path, scratch_dir):
-        # type: (Union[str, Path], Union[str, Path]) -> None
-        self.prefix = ""
-        self.scratch_dir = Path(scratch_dir)
-        self.exe_path = Path(exe_path).resolve()
-        assert self.exe_path.is_file()
+    exe_path: Path = attrs.field(converter=_concrete_path)
+    scratch_dir: Path = attrs.field(converter=_concrete_path)
 
-        # Initialize private data
-        self._exe_args = []  # type: List[str]
+    # Data for the test currently being run
+    prefix: str = attrs.field(default="", init=False)
+    _exe_args: list[str] = attrs.field(factory=list, init=False)
 
-        # Track state
-        self.setup_run = False
-        self.exe_run = False
+    # Track state
+    setup_run: bool = attrs.field(default=False, init=False)
+    exe_run: bool = attrs.field(default=False, init=False)
+
+    def __attrs_post_init__(self) -> None:
+        if not self.exe_path.is_file():
+            raise TestCodeError(f"Executable {self.exe_path} does not exist")
 
     @property
-    def exe_args(self) -> Sequence[str]:
+    def exe_args(self) -> list[str]:
         """Produce cli arguments to supply to the program under test."""
         return self._exe_args
 
     @exe_args.setter
     def exe_args(self, args: Sequence[str]) -> None:
-        self._exe_args = args
+        self._exe_args = list(args)
 
     def generate_program_input(
         self, input_files: Mapping[str, str], *input_args: Any, **input_kw: Any
@@ -123,7 +132,7 @@ class ExeTestFixture:
 
         # Don't run program if input is not set up
         if not self.setup_run:
-            raise RuntimeError("Test fixture is not set up.")
+            raise TestCodeError("Test fixture is not set up.")
 
         # Run the program
         _args = [str(self.exe_path), *self.exe_args]
@@ -152,8 +161,7 @@ class ExeTestFixture:
         # Update state
         self.exe_run = True
 
-    def cleanup(self):
-        # type: () -> None
+    def cleanup(self) -> None:
         """Remove scratch space after exe run."""
         import shutil
 
