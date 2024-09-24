@@ -51,6 +51,7 @@ class ExeTestFixture:
     scratch_dir: Path = attrs.field(converter=_concrete_path)
 
     # Data for the test currently being run
+    test_name: str = attrs.field(default="", init=False)
     prefix: str = attrs.field(default="", init=False)
     _exe_args: list[str] = attrs.field(factory=list, init=False)
 
@@ -90,23 +91,26 @@ class ExeTestFixture:
 
     def setup(
         self,
-        prefix: str,
+        test_name: str,
         input_files: Mapping[str, str],
         *,
-        input_args: Optional[Sequence] = None,
+        prefix: Optional[str] = None,
         exe_args: Optional[Sequence[str]] = None,
+        input_args: Optional[Sequence] = None,
         input_kw: Optional[Mapping[str, Any]] = None,
     ) -> None:
         """Prepare the scratch directory to run the exe.
 
         Args:
-            prefix: Prefix for the program input/output
+            test_name: Name for test case to set up
             input_files: mapping from file name to file contents for input files
+            prefix: Prefix for the program input/output
             exe_args: Command-line arguments for the exe
             input_args: Passed to `generate_program_input`
             input_kw: Passed to `generate_program_input`
         """
-        self.prefix = prefix
+        self.test_name = test_name
+        self.prefix = prefix if prefix is not None else test_name
 
         if exe_args is not None:
             self.exe_args = exe_args
@@ -143,9 +147,7 @@ class ExeTestFixture:
 
         if _pout.returncode != 0:
             raise TestCodeError(
-                "Nonzero exit status ({}) in test '{}'".format(
-                    _pout.returncode, self.prefix
-                )
+                f"Nonzero exit status ({_pout.returncode}) in test '{self.test_name}'"
             )
 
         # Write streams to files
@@ -166,6 +168,7 @@ class ExeTestFixture:
         import shutil
 
         shutil.rmtree(self.scratch_dir)
+        self.test_name = ""
         self.prefix = ""
         self.setup_run = False
         self.exe_run = False

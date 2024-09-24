@@ -70,7 +70,9 @@ class TestCase(Serializable):
         results = []
         try:
             # Initialize the fixture
-            fixture.setup(self.prefix, in_files, exe_args=self.cli_args)
+            fixture.setup(
+                self.name, in_files, prefix=self.prefix, exe_args=self.cli_args
+            )
             fixture.run_exe()
 
             # Use the fixture for each query
