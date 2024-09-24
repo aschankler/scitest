@@ -44,11 +44,11 @@ class ExeTestFixture:
 
     Args:
         exe_path: Path to the executable under test
-        scratch_dir: Directory to run the program in
+        scratch_dir_base: Directory to run the program in
     """
 
     exe_path: Path = attrs.field(converter=_concrete_path)
-    scratch_dir: Path = attrs.field(converter=_concrete_path)
+    scratch_dir_base: Path = attrs.field(converter=_concrete_path)
 
     # Data for the test currently being run
     test_name: str = attrs.field(default="", init=False)
@@ -62,6 +62,12 @@ class ExeTestFixture:
     def __attrs_post_init__(self) -> None:
         if not self.exe_path.is_file():
             raise TestCodeError(f"Executable {self.exe_path} does not exist")
+
+    @property
+    def scratch_dir(self) -> Path:
+        """Directory where current test is run."""
+        # Note: not well-defined if `not setup_run`
+        return self.scratch_dir_base / self.test_name
 
     @property
     def exe_args(self) -> list[str]:
