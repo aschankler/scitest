@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Sequence, TextIO
+from typing import Sequence, TextIO, Optional
 
 from scitest.config import TestConfig
 from scitest.fixture import ExeTestFixture
@@ -231,15 +231,21 @@ def display_suite_result(
     out_stream.write(f"Ran {len(suite_results.results)} tests\n\n")
 
 
-def _run_test_suite(suite, version, exe_path):
-    # type: (TestSuite, str, Path) -> TestSuiteResults
+def _run_test_suite(
+    suite: TestSuite,
+    version: str,
+    exe_path: Path,
+    *,
+    scratch_base: Optional[Path] = None,
+) -> TestSuiteResults:
     import tempfile
 
     # Create temporary scratch dir
-    # TODO: option for persistent scratch
-    with tempfile.TemporaryDirectory() as scratch_dir:
+    delete_scratch = scratch_base is None
+    with tempfile.TemporaryDirectory(
+        prefix=suite.suite_name, dir=scratch_base, delete=delete_scratch
+    ) as scratch_dir:
         # Set up common test fixture
-        scratch_dir = Path.cwd().joinpath("work")
         fixture = ExeTestFixture(exe_path, scratch_dir)
 
         # Run the test suite
