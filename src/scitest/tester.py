@@ -242,7 +242,7 @@ def _run_test_suite(
     import tempfile
 
     # Create temporary scratch dir
-    scratch_dir = tempfile.mkdtemp(prefix=suite.suite_name, dir=scratch_base)
+    scratch_dir = tempfile.mkdtemp(prefix=suite.name, dir=scratch_base)
     # Set up common test fixture
     fixture = ExeTestFixture(exe_path, scratch_dir)
 
@@ -255,7 +255,7 @@ def _run_test_suite(
     if scratch_base is None:
         shutil.rmtree(scratch_dir)
 
-    return TestSuiteResults(suite.suite_name, version, suite_results)
+    return TestSuiteResults(suite.name, version, suite_results)
 
 
 def run_bench_mode(conf: TestConfig, verbose: bool = False) -> None:

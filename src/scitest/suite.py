@@ -166,11 +166,11 @@ class TestSuite:
     """Collection of test objects grouped into a test suite.
 
     Attributes:
-        suite_name: Test suite name
+        name: Test suite name
         tests: Map of test name to test object
     """
 
-    suite_name: str
+    name: str
     tests: Mapping[str, TestCase]
 
 
