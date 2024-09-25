@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Sequence, TextIO, Optional
+from typing import Optional, Sequence, TextIO
 
 from scitest.config import TestConfig
 from scitest.fixture import ExeTestFixture
@@ -238,20 +238,22 @@ def _run_test_suite(
     *,
     scratch_base: Optional[Path] = None,
 ) -> TestSuiteResults:
+    import shutil
     import tempfile
 
     # Create temporary scratch dir
-    delete_scratch = scratch_base is None
-    with tempfile.TemporaryDirectory(
-        prefix=suite.suite_name, dir=scratch_base, delete=delete_scratch
-    ) as scratch_dir:
-        # Set up common test fixture
-        fixture = ExeTestFixture(exe_path, scratch_dir)
+    scratch_dir = tempfile.mkdtemp(prefix=suite.suite_name, dir=scratch_base)
+    # Set up common test fixture
+    fixture = ExeTestFixture(exe_path, scratch_dir)
 
-        # Run the test suite
-        suite_results = {}
-        for test_name, test in suite.tests.items():
-            suite_results[test_name] = test.run_test(fixture)
+    # Run the test suite
+    suite_results = {}
+    for test_name, test in suite.tests.items():
+        suite_results[test_name] = test.run_test(fixture)
+
+    # Delete scratch directory if not needed
+    if scratch_base is None:
+        shutil.rmtree(scratch_dir)
 
     return TestSuiteResults(suite.suite_name, version, suite_results)
 
