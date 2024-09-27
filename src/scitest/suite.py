@@ -5,7 +5,7 @@ A test is a pairing of program input conditions and queries for the results.
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import Optional, Self, TypeVar
 
 import attrs
 import schema
@@ -162,7 +162,7 @@ class TestCase(Serializable):
 
 
 @attrs.frozen(order=False)
-class TestSuite:
+class TestSuite(Serializable):
     """Collection of test objects grouped into a test suite.
 
     Attributes:
@@ -173,26 +173,37 @@ class TestSuite:
     name: str
     tests: Mapping[str, TestCase]
 
+    @classmethod
+    def get_object_schema(cls, *, strict: bool = True) -> SchemaType:
+        """Return schema for test suite."""
+        return schema.Schema(
+            {"suite-name": str, "tests": [TestCase.get_object_schema(strict=False)]},
+            name=cls.__name__,
+        )
 
-def load_suite_file(file_contents: Any) -> TestSuite:
-    """Load test suite definitions from serialized form.
+    def serialize(self) -> SerializedType:
+        """Serialize test suite to python types."""
+        return {
+            "suite-name": self.name,
+            "tests": [test.serialize() for test in self.tests.values()],
+        }
 
-    Note that test definitions can make use of the CWD to resolve relative paths.
-    """
-    file_schema = schema.Schema(
-        {"suite-name": str, "tests": [TestCase.get_object_schema(strict=False)]}
-    )
-    try:
-        parsed = file_schema.validate(file_contents)
-    except schema.SchemaError as exe:
-        raise SerializationError("Malformed test file") from exe
+    @classmethod
+    def from_serialized(cls, state: SerializedType) -> Self:
+        """Load test suite definitions from serialized form.
 
-    tests = [TestCase.from_serialized(_test_rep) for _test_rep in parsed["tests"]]
-    return TestSuite(parsed["suite-name"], {test.name: test for test in tests})
+        Note that test definitions can make use of the CWD to resolve relative paths.
+        """
+        try:
+            parsed = cls.get_object_schema().validate(state)
+        except schema.SchemaError as exe:
+            raise SerializationError("Malformed test file") from exe
+        tests = [TestCase.from_serialized(_test_rep) for _test_rep in parsed["tests"]]
+        return cls(parsed["suite-name"], {test.name: test for test in tests})
 
 
 @attrs.frozen(order=False)
-class TestSuiteResults:
+class TestSuiteResults(Serializable):
     """Results for a test suite.
 
     Attributes:
@@ -205,51 +216,65 @@ class TestSuiteResults:
     version: str
     results: Mapping[str, Sequence[QuerySetResults]]
 
+    @classmethod
+    def get_object_schema(cls, *, strict: bool = True) -> SchemaType:
+        """Return schema for test suite results."""
+        if not strict:
+            return schema.Schema(dict, name=cls.__name__)
+        return schema.Schema(
+            {
+                "suite-name": str,
+                "version": str,
+                "suite-results": {
+                    str: [QuerySetResults.get_object_schema(strict=False)]
+                },
+            },
+            name=cls.__name__,
+        )
 
-def load_result_file(file_contents: Any) -> TestSuiteResults:
-    """Load test suite results from a serialized format.
+    def serialize(self) -> SerializedType:
+        """Serialize test suite results to python types."""
+        results = {
+            test_name: [_res.serialize() for _res in test_res]
+            for test_name, test_res in self.results.items()
+        }
+        return {
+            "suite-name": self.suite_name,
+            "version": self.version,
+            "suite-results": results,
+        }
 
-    File schema::
+    @classmethod
+    def from_serialized(cls, state: SerializedType) -> Self:
+        """Load test suite results from a serialized format.
 
-        suite-name: <test suite name>
-        version: <version>
-        suite-results:
-          <test name>:
-            - <result set>
-            - <result set>
-            - ...
-          <test name>: ...
-          ...
-    """
-    file_schema = schema.Schema(
-        {"suite-name": str, "version": str, "suite-results": {str: list}}
-    )
-    try:
-        parsed = file_schema.validate(file_contents)
-    except schema.SchemaError as exe:
-        raise SerializationError("Malformed result file") from exe
+        File schema::
 
-    def _deserialize_case_results(_results: list) -> list[QuerySetResults]:
-        return [QuerySetResults.from_serialized(_q_set_res) for _q_set_res in _results]
+            suite-name: <test suite name>
+            version: <version>
+            suite-results:
+              <test name>:
+                - <result set>
+                - <result set>
+                - ...
+              <test name>: ...
+              ...
+        """
+        try:
+            parsed = cls.get_object_schema().validate(state)
+        except schema.SchemaError as exe:
+            raise SerializationError("Malformed result file") from exe
 
-    return TestSuiteResults(
-        parsed["suite-name"],
-        parsed["version"],
-        {
-            str(test_name): _deserialize_case_results(results)
-            for test_name, results in parsed["suite-results"].items()
-        },
-    )
+        def _deserialize_test_results(_results: list) -> list[QuerySetResults]:
+            return [
+                QuerySetResults.from_serialized(_qset_res) for _qset_res in _results
+            ]
 
-
-def serialize_result_file(suite_results: TestSuiteResults) -> SerializedType:
-    """Serialize test suite results to python types."""
-    results = {
-        test_name: [_res.serialize() for _res in test_res]
-        for test_name, test_res in suite_results.results.items()
-    }
-    return {
-        "suite-name": suite_results.suite_name,
-        "version": suite_results.version,
-        "suite-results": results,
-    }
+        return cls(
+            parsed["suite-name"],
+            parsed["version"],
+            {
+                str(test_name): _deserialize_test_results(results)
+                for test_name, results in parsed["suite-results"].items()
+            },
+        )

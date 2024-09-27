@@ -33,13 +33,7 @@ import yaml
 
 from scitest.exceptions import SerializationError, TestCodeError
 from scitest.query import load_query_file
-from scitest.suite import (
-    TestSuite,
-    TestSuiteResults,
-    load_result_file,
-    load_suite_file,
-    serialize_result_file,
-)
+from scitest.suite import TestSuite, TestSuiteResults
 
 _T = TypeVar("_T")
 
@@ -206,7 +200,7 @@ def _load_test_dir(
         test_files = discover_test_files(Path.cwd(), allowed_suites=suite_request)
         for suite_name, suite_path in test_files.items():
             parsed = _load_serialized_file(suite_path)
-            test_suites[suite_name] = load_suite_file(parsed)
+            test_suites[suite_name] = TestSuite.from_serialized(parsed)
 
     # Load tests from subdirectories
     if recursive:
@@ -357,7 +351,7 @@ def load_result_data(
         """Load results for a single test suite."""
         _, path_name, path_ver = ref_path.stem.split("-", maxsplit=2)
         parsed = _load_serialized_file(ref_path)
-        suite_results = load_result_file(parsed)
+        suite_results = TestSuiteResults.from_serialized(parsed)
         assert path_name == suite_results.suite_name
         assert path_ver == suite_results.version
         return suite_results
@@ -390,5 +384,5 @@ def write_reference_data(
         out_path = (
             out_dir / f"{out_type}-{result.suite_name}-{result.version}.{file_type}"
         )
-        out_data = serialize_result_file(result)
+        out_data = result.serialize()
         _write_serialized_file(out_path, out_data)
