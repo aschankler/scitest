@@ -13,7 +13,7 @@ import schema
 from scitest.exceptions import SerializationError
 from scitest.fixture import ExeTestFixture
 from scitest.query import QuerySet, QuerySetResults, resolve_query_set
-from scitest.query.properties import SchemaType, Serializable, SerializedType
+from scitest.serialize import SchemaType, Serializable, SerializedType
 
 _T = TypeVar("_T")
 _ClsT = TypeVar("_ClsT", bound="TestCase")

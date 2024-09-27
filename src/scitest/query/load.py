@@ -17,8 +17,8 @@ import schema
 
 from scitest.exceptions import SerializationError
 from scitest.query.base import OutputQueryBase, load_query, register_queries
-from scitest.query.properties import SerializedType
 from scitest.query.query_set import QuerySet, register_query_sets
+from scitest.serialize import SerializedType
 
 # Todo: improve type checking in query dereferencing
 _QueryDefT: TypeAlias = dict[str, SerializedType]

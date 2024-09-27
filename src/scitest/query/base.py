@@ -9,8 +9,8 @@ import attrs
 import schema
 
 from scitest.exceptions import QueryError, SerializationError
-from scitest.query.properties import SchemaType, Serializable, SerializedType
 from scitest.query.quantity import QuantityTypeBase, load_quantity
+from scitest.serialize import SchemaType, Serializable, SerializedType
 
 _T = TypeVar("_T")
 

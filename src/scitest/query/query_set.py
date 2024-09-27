@@ -7,8 +7,8 @@ import schema
 
 from scitest.exceptions import SerializationError, TestCodeError, TestFailure
 from scitest.query.base import OutputQueryBase, resolve_query
-from scitest.query.properties import SchemaType, Serializable, SerializedType
 from scitest.query.results import QueryResult
+from scitest.serialize import SchemaType, Serializable, SerializedType
 
 
 class QuerySet(Collection[OutputQueryBase], Serializable):

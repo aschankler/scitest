@@ -7,7 +7,7 @@ import schema
 
 from scitest.exceptions import TestCodeError
 from scitest.query.base import OutputQueryBase, resolve_query
-from scitest.query.properties import SchemaType, Serializable, SerializedType
+from scitest.serialize import SchemaType, Serializable, SerializedType
 
 _T = TypeVar("_T")
 

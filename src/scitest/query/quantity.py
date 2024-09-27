@@ -27,7 +27,7 @@ import attrs.validators as attrsv
 import schema
 
 from scitest.exceptions import SerializationError
-from scitest.query.properties import SchemaType, Serializable, SerializedType
+from scitest.serialize import SchemaType, Serializable, SerializedType
 
 _KT = TypeVar("_KT")
 _T = TypeVar("_T")
