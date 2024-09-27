@@ -1,7 +1,7 @@
 """Datastructure to store query output."""
 
 import enum
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, Self, TypeVar
 
 import schema
 
@@ -146,7 +146,7 @@ class QueryResult(Serializable, Generic[_T]):
         return state
 
     @classmethod
-    def from_serialized(cls, state: SerializedType) -> "QueryResult":
+    def from_serialized(cls, state: SerializedType) -> Self:
         """Load result object from serialized state."""
         state = cls.get_object_schema().validate(state)
         query = resolve_query(str(state["query-name"]))

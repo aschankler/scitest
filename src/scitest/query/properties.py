@@ -33,6 +33,6 @@ class Serializable(ABC):
 
     @classmethod
     @abstractmethod
-    def from_serialized(cls: Self, state: SerializedType) -> Self:
+    def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a new object out of a serialized representation."""
         raise NotImplementedError

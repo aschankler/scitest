@@ -3,7 +3,7 @@
 import enum
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Callable, Generic, Iterable, Type, TypeVar
+from typing import Any, Callable, Generic, Iterable, Self, TypeVar
 
 import attrs
 import schema
@@ -13,8 +13,6 @@ from scitest.query.properties import SchemaType, Serializable, SerializedType
 from scitest.query.quantity import QuantityTypeBase, load_quantity
 
 _T = TypeVar("_T")
-_ClsT = TypeVar("_ClsT", bound="OutputQueryBase")
-
 
 QUERY_SCHEMA_KEY = "__query_schema"
 QUERY_SERIALIZER_KEY = "__query_serializer"
@@ -226,7 +224,7 @@ class OutputQueryBase(Serializable, Generic[_T], ABC):
         }
 
     @classmethod
-    def from_serialized(cls: Type[_ClsT], state: SerializedType) -> _ClsT:
+    def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a new query object out of a serialized representation."""
         # Validate the representation against the object schema
         try:

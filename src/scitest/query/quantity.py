@@ -20,7 +20,7 @@ which is deserialized as `RegisteredType()`
 
 from abc import ABC, abstractmethod
 from operator import methodcaller
-from typing import Any, Callable, Generic, Mapping, Optional, Sequence, TypeVar
+from typing import Any, Callable, Generic, Mapping, Optional, Self, Sequence, TypeVar
 
 import attrs
 import attrs.validators as attrsv
@@ -32,7 +32,6 @@ from scitest.query.properties import SchemaType, Serializable, SerializedType
 _KT = TypeVar("_KT")
 _T = TypeVar("_T")
 _WT = TypeVar("_WT")
-_QtyT = TypeVar("_QtyT", bound="QuantityTypeBase")
 
 # Global store of allowed quantity types. Used to resolve classes during deserialization
 _quantity_type_map: dict[str, type["QuantityTypeBase"]] = {}
@@ -221,7 +220,7 @@ class QuantityTypeBase(Serializable, Generic[_T], ABC):
         return parsed["quantity-type"]
 
     @classmethod
-    def from_serialized(cls: type[_QtyT], state: SerializedType) -> _QtyT:
+    def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a new object out of a serialized representation."""
         # Try using abbreviated schema
         if schema.Schema(str).is_valid(state):

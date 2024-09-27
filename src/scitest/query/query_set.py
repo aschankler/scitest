@@ -1,7 +1,7 @@
 """Datastructures for collections of queries and query results."""
 
 from collections.abc import Collection, Iterable, Iterator, Mapping
-from typing import Type, TypeVar
+from typing import Self
 
 import schema
 
@@ -9,8 +9,6 @@ from scitest.exceptions import SerializationError, TestCodeError, TestFailure
 from scitest.query.base import OutputQueryBase, resolve_query
 from scitest.query.properties import SchemaType, Serializable, SerializedType
 from scitest.query.results import QueryResult
-
-_ClsT = TypeVar("_ClsT")
 
 
 class QuerySet(Collection[OutputQueryBase], Serializable):
@@ -94,7 +92,7 @@ class QuerySet(Collection[OutputQueryBase], Serializable):
         return {"query-set-name": self.query_set_name, "queries": self.query_names}
 
     @classmethod
-    def from_serialized(cls: Type[_ClsT], state: SerializedType) -> _ClsT:
+    def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a query set and resolve referenced queries."""
         state = cls.get_object_schema().validate(state)
 
@@ -264,7 +262,7 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
         }
 
     @classmethod
-    def from_serialized(cls, state: SerializedType) -> "QuerySetResults":
+    def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a results set from serialized input."""
         results = [QueryResult.from_serialized(res) for res in state["results"]]
         query_set = resolve_query_set(state["query-set"])
