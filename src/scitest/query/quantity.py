@@ -33,35 +33,6 @@ _KT = TypeVar("_KT")
 _T = TypeVar("_T")
 _WT = TypeVar("_WT")
 
-# Global store of allowed quantity types. Used to resolve classes during deserialization
-_quantity_type_map: dict[str, type["QuantityTypeBase"]] = {}
-
-
-def register_quantity_type(cls: type["QuantityTypeBase"]) -> type["QuantityTypeBase"]:
-    """Register a quantity class in a global type map.
-
-    Registering the class allows serialization and deserialization methods to work
-    correctly. This function may be used as a decorator.
-    """
-    if cls.__name__ not in _quantity_type_map:
-        _quantity_type_map[cls.__name__] = cls
-    return cls
-
-
-def load_quantity(state: SerializedType) -> "QuantityTypeBase":
-    """Load a quantity from a serialized state.
-
-    The quantity type must have been previously registered.
-    """
-    type_name = QuantityTypeBase.type_from_serialized(state)
-    try:
-        qty_cls = _quantity_type_map[type_name]
-    except KeyError as exe:
-        raise SerializationError(
-            f"Could not load quantity. Unknown type {type_name}"
-        ) from exe
-    return qty_cls.from_serialized(state)
-
 
 # Keys to supply additional metadata to the attrs fields
 QUANTITY_SCHEMA_KEY: str = "__quantity_schema"
@@ -248,6 +219,36 @@ class QuantityTypeBase(Serializable, Generic[_T], ABC):
                 params[field.alias] = _decoder(params[field.alias])
         # Construct the object
         return cls(**params)
+
+
+# Global store of allowed quantity types. Used to resolve classes during deserialization
+_quantity_type_map: dict[str, type[QuantityTypeBase]] = {}
+
+
+def register_quantity_type(cls: type[QuantityTypeBase]) -> type[QuantityTypeBase]:
+    """Register a quantity class in a global type map.
+
+    Registering the class allows serialization and deserialization methods to work
+    correctly. This function may be used as a decorator.
+    """
+    if cls.__name__ not in _quantity_type_map:
+        _quantity_type_map[cls.__name__] = cls
+    return cls
+
+
+def load_quantity(state: SerializedType) -> QuantityTypeBase:
+    """Load a quantity from a serialized state.
+
+    The quantity type must have been previously registered.
+    """
+    type_name = QuantityTypeBase.type_from_serialized(state)
+    try:
+        qty_cls = _quantity_type_map[type_name]
+    except KeyError as exe:
+        raise SerializationError(
+            f"Could not load quantity. Unknown type {type_name}"
+        ) from exe
+    return qty_cls.from_serialized(state)
 
 
 @attrs.define(order=False)
