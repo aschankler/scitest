@@ -34,5 +34,18 @@ class Serializable(ABC):
     @classmethod
     @abstractmethod
     def from_serialized(cls, state: SerializedType) -> Self:
-        """Construct a new object out of a serialized representation."""
+        """Construct a new object out of a serialized representation.
+
+        Args:
+            state: serialized object state in pure python types
+
+        Returns:
+            Constructed object instance restored from serialized state
+
+        Raises:
+            ValueError: if a valid schema is used to create an object with invalid
+                arguments to the constructor
+            SerializationError: if the serialized representation cannot be used to
+                construct an object
+        """
         raise NotImplementedError

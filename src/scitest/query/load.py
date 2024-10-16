@@ -109,6 +109,9 @@ def parse_queries(query_block: Sequence[SerializedType]) -> dict[str, OutputQuer
 
     Returns:
         Mapping from query names to query objects
+
+    Raises:
+        SerializationError: if any queries could not be successfully loaded
     """
     query_block_schema = schema.Schema([{"query-name": str, str: object}])
     try:
@@ -123,12 +126,10 @@ def parse_queries(query_block: Sequence[SerializedType]) -> dict[str, OutputQuer
         query_map[query_name] = query_state
 
     query_map = _dereference_query_map(query_map)
-
-    queries = {}
-    for query_name, query_state in query_map.items():
-        # Should be no need to check for duplicate names, as strictyaml disallows this
-        query = load_query(query_state)
-        queries[query_name] = query
+    queries = {
+        query_name: load_query(query_state)
+        for query_name, query_state in query_map.items()
+    }
 
     return queries
 
@@ -141,6 +142,9 @@ def parse_query_sets(qset_block: Sequence[SerializedType]) -> dict[str, QuerySet
 
     Returns:
         A map from query set names to fully instantiated query set objects
+
+    Raises:
+        SerializationError: if any query sets cannot be loaded
     """
     qset_block_schema = schema.Schema([QuerySet.get_object_schema(strict=False)])
     try:

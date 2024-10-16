@@ -36,7 +36,7 @@ def _parse_yes_no(value: str) -> bool:
     elif value == "no":
         return False
     else:
-        raise QueryError
+        raise ValueError(f"Expected yes/no; got {value!r}")
 
 
 _parse_query_result_fns: dict[str, Callable[[str], Any]] = {

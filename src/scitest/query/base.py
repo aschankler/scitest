@@ -256,9 +256,19 @@ _query_type_map: dict[str, type[OutputQueryBase]] = {}
 
 
 def register_query_type(cls: type[OutputQueryBase]) -> type[OutputQueryBase]:
-    """Register a query class globally for use in deserialization."""
-    if cls.__name__ not in _query_type_map:
-        _query_type_map[cls.__name__] = cls
+    """Register a query class globally for use in deserialization.
+
+    This function may be used as a decorator.
+
+    Args:
+        cls: query class to register
+
+    Raises:
+        ValueError: if a query type of the same name has been registered already
+    """
+    if cls.__name__ in _query_type_map:
+        raise ValueError(f"Query of type {cls.__name__} already registered")
+    _query_type_map[cls.__name__] = cls
     return cls
 
 
@@ -266,6 +276,9 @@ def load_query(state: SerializedType) -> OutputQueryBase:
     """Load a query from serialized state.
 
     The query must have been registered.
+
+    Raises:
+        SerializationError: if the state cannot be deserialized for any reason
     """
     query_schema = OutputQueryBase.get_object_schema(strict=False)
     try:
@@ -276,7 +289,10 @@ def load_query(state: SerializedType) -> OutputQueryBase:
         query_cls = _query_type_map[state["query-type"]]
     except KeyError as exe:
         raise SerializationError(f"Unknown query type {state['query-type']}") from exe
-    return query_cls.from_serialized(state)
+    try:
+        return query_cls.from_serialized(state)
+    except ValueError as exe:
+        raise SerializationError from exe
 
 
 # Store of registered query objects
@@ -290,12 +306,12 @@ def register_queries(queries: Iterable[OutputQueryBase]) -> None:
         queries: Query objects to register
 
     Raises:
-        RuntimeError: If a duplicate query name is registered
+        ValueError: If a duplicate query name is registered
     """
     for query in queries:
         q_name = query.query_name
         if q_name in _query_map:
-            raise RuntimeError(f"Duplicate query {q_name!r} registered.")
+            raise ValueError(f"Duplicate query {q_name!r} registered.")
         _query_map[q_name] = query
 
 

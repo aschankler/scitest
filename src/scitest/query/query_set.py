@@ -94,7 +94,10 @@ class QuerySet(Collection[OutputQueryBase], Serializable):
     @classmethod
     def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a query set and resolve referenced queries."""
-        state = cls.get_object_schema().validate(state)
+        try:
+            state = cls.get_object_schema().validate(state)
+        except schema.SchemaError as exe:
+            raise SerializationError("Malformed query set") from exe
 
         queries = []
         for query_name in state["queries"]:
@@ -117,12 +120,12 @@ def register_query_sets(query_sets: Iterable[QuerySet]) -> None:
         query_sets: Query sets to register
 
     Raises:
-        RuntimeError: If a duplicate name is registered
+        ValueError: If a duplicate name is registered
     """
     for q_set in query_sets:
-        name = str(q_set)
+        name = q_set.query_set_name
         if name in _query_set_map:
-            raise RuntimeError(f"Duplicate query set {name!r} registered.")
+            raise ValueError(f"Duplicate query set {name!r} registered.")
         _query_set_map[name] = q_set
 
 
@@ -215,6 +218,7 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
         Args:
             other: Results set to compare against
             raise_failures (optional): The first failed comparison raises an exception
+
         Returns:
             True if all results match, False if not
 
@@ -264,6 +268,13 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
     @classmethod
     def from_serialized(cls, state: SerializedType) -> Self:
         """Construct a results set from serialized input."""
+        try:
+            state = cls.get_object_schema().validate(state)
+        except schema.SchemaError as exe:
+            raise SerializationError("Malformed result set") from exe
         results = [QueryResult.from_serialized(res) for res in state["results"]]
-        query_set = resolve_query_set(state["query-set"])
+        try:
+            query_set = resolve_query_set(state["query-set"])
+        except KeyError as exe:
+            raise SerializationError(f"Unknown query set {state["query-set"]}") from exe
         return cls(str(state["results-name"]), query_set, results)

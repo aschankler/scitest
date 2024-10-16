@@ -230,9 +230,16 @@ def register_quantity_type(cls: type[QuantityTypeBase]) -> type[QuantityTypeBase
 
     Registering the class allows serialization and deserialization methods to work
     correctly. This function may be used as a decorator.
+
+    Args:
+        cls: quantity class to register
+
+    Raises:
+        ValueError: if a quantity type of the same name is already registered.
     """
-    if cls.__name__ not in _quantity_type_map:
-        _quantity_type_map[cls.__name__] = cls
+    if cls.__name__ in _quantity_type_map:
+        raise ValueError(f"Duplicate quantity type {cls.__name__}")
+    _quantity_type_map[cls.__name__] = cls
     return cls
 
 
@@ -240,6 +247,9 @@ def load_quantity(state: SerializedType) -> QuantityTypeBase:
     """Load a quantity from a serialized state.
 
     The quantity type must have been previously registered.
+
+    Raises:
+        SerializationError: if a valid quantity cannot be constructed
     """
     type_name = QuantityTypeBase.type_from_serialized(state)
     try:
@@ -248,7 +258,10 @@ def load_quantity(state: SerializedType) -> QuantityTypeBase:
         raise SerializationError(
             f"Could not load quantity. Unknown type {type_name}"
         ) from exe
-    return qty_cls.from_serialized(state)
+    try:
+        return qty_cls.from_serialized(state)
+    except ValueError as exe:
+        raise SerializationError from exe
 
 
 @attrs.define(order=False)

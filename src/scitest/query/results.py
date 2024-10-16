@@ -5,7 +5,7 @@ from typing import Generic, Optional, Self, TypeVar
 
 import schema
 
-from scitest.exceptions import TestCodeError
+from scitest.exceptions import SerializationError, TestCodeError
 from scitest.query.base import OutputQueryBase, resolve_query
 from scitest.serialize import SchemaType, Serializable, SerializedType
 
@@ -91,7 +91,7 @@ class QueryResult(Serializable, Generic[_T]):
         """Test if two query results are equal.
 
         Raises:
-            TestError: If the results are from incompatible queries
+            TestCodeError: If the results are from incompatible queries
         """
         if self.query != other.query:
             raise TestCodeError(
@@ -105,7 +105,7 @@ class QueryResult(Serializable, Generic[_T]):
         """Verbose result comparison.
 
         Raises:
-            TestError: If the results are from incompatible queries
+            TestCodeError: If the results are from incompatible queries
         """
         if self.query != other.query:
             raise TestCodeError(
@@ -148,7 +148,10 @@ class QueryResult(Serializable, Generic[_T]):
     @classmethod
     def from_serialized(cls, state: SerializedType) -> Self:
         """Load result object from serialized state."""
-        state = cls.get_object_schema().validate(state)
+        try:
+            state = cls.get_object_schema().validate(state)
+        except schema.SchemaError as exe:
+            raise SerializationError from exe
         query = resolve_query(str(state["query-name"]))
         if "error" in state and state["error"]:
             # Note: we discard any value stored in "result" here
