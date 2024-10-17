@@ -279,7 +279,9 @@ def run_bench_mode(conf: TestConfig, verbose: bool = False) -> None:
     # Run test suites and print results
     all_results = []
     for suite_name, suite_tests in suites.items():
-        suite_results = _run_test_suite(suite_tests, out_ver, conf.exe_path)
+        suite_results = _run_test_suite(
+            suite_tests, out_ver, conf.exe_path, scratch_base=conf.scratch_dir
+        )
         display_suite_result(suite_name, suite_results, verbose=verbose)
         all_results.append(suite_results)
 
@@ -318,7 +320,9 @@ def run_test_mode(conf: TestConfig, verbose: bool = False) -> None:
     for suite_name, suite_tests in suites.items():
         ref_results = ref_data[suite_name]
         # Run test suite
-        suite_results = _run_test_suite(suite_tests, out_ver, conf.exe_path)
+        suite_results = _run_test_suite(
+            suite_tests, out_ver, conf.exe_path, scratch_base=conf.scratch_dir
+        )
         all_results.append(suite_results)
         # Write comparison
         display_suite_comparison(

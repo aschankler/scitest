@@ -101,6 +101,7 @@ class TestConfig:
         exe_path: path to program under test
         test_out: directory to write test results
         bench_out: directory to write benchmark results when produced
+        scratch_dir: base directory where program output is written
         ref_ver: use this version as reference. Default is to use the latest
         cmp_ver: compare this version against the reference
         out_ver: use this version to stamp the test output
@@ -113,6 +114,7 @@ class TestConfig:
     exe_path: Optional[Path] = _path_field(must_exist=True)
     test_out: Optional[Path] = _path_field()
     bench_out: Optional[Path] = _path_field()
+    scratch_dir: Optional[Path] = _path_field()
     ref_ver: Optional[str] = _version_field()
     cmp_ver: Optional[str] = _version_field()
     out_ver: Optional[str] = _version_field()

@@ -20,6 +20,7 @@ PARSER_FIELDS = (
     "exe_path",
     "test_out",
     "bench_out",
+    "scratch_dir",
     "ref_ver",
     "cmp_ver",
     "out_ver",
@@ -117,6 +118,20 @@ def _make_argument_parser() -> ArgumentParser:
         help="Directory to write benchmarks.",
     )
 
+    scratch_grp = parser.add_mutually_exclusive_group()
+    scratch_grp.add_argument(
+        "--scratch-dir",
+        type=Path,
+        dest="scratch_dir",
+        metavar="DIR",
+        help="Base directory to save program output",
+    )
+    scratch_grp.add_argument(
+        "--keep-scratch",
+        action="store_true",
+        help="Keep program output in current directory",
+    )
+
     # Configure version stamps
     parser.add_argument(
         "--ref-version",
@@ -158,6 +173,8 @@ def main(argv: Sequence[str]) -> None:
 
     # Generate configuration
     conf = TestConfig.from_namespace(args, PARSER_FIELDS, root_path=Path.cwd())
+    if args.keep_scratch:
+        conf.scratch_dir = Path.cwd()
     if args.config is not None:
         conf_file = args.config
     elif Path.cwd().joinpath("config.yml").exists():
@@ -181,11 +198,20 @@ def main(argv: Sequence[str]) -> None:
 
     if args.mode == "test":
         conf.check_fields(
-            ("exe_path", "test_out", "test_dirs", "ref_dirs", "query_dirs")
+            (
+                "exe_path",
+                "test_out",
+                "test_dirs",
+                "ref_dirs",
+                "query_dirs",
+                "scratch_dir",
+            )
         )
         run_test_mode(conf, verbose=is_verbose)
     elif args.mode == "bench":
-        conf.check_fields(("exe_path", "bench_out", "test_dirs", "query_dirs"))
+        conf.check_fields(
+            ("exe_path", "bench_out", "test_dirs", "query_dirs", "scratch_dir")
+        )
         run_bench_mode(conf, verbose=is_verbose)
     elif args.mode == "compare":
         conf.check_fields(("ref_dirs", "ref_ver", "cmp_ver"))
