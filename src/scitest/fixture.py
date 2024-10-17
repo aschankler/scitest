@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional, Sequence
 
 import attrs
 
-from scitest.exceptions import QueryError, TestCodeError
+from scitest.exceptions import ProgramError, QueryError, TestCodeError, TestSetupError
 from scitest.query import OutputQueryBase, QueryResult
 
 
@@ -89,7 +89,7 @@ class ExeTestFixture:
         for in_name, in_data in input_files.items():
             in_path = self.scratch_dir / in_name
             if not in_path.is_relative_to(self.scratch_dir):
-                raise TestCodeError(
+                raise TestSetupError(
                     f"Input file {in_name} must be a child of the scratch directory."
                 )
             with open(in_path, "w", encoding="utf8") as f_input:
@@ -114,6 +114,9 @@ class ExeTestFixture:
             exe_args: Command-line arguments for the exe
             input_args: Passed to `generate_program_input`
             input_kw: Passed to `generate_program_input`
+
+        Raises:
+            TestSetupError: if input conditions are incorrectly specified or cannot be realized
         """
         self.test_name = test_name
         self.prefix = prefix if prefix is not None else test_name
@@ -135,9 +138,12 @@ class ExeTestFixture:
         self.setup_run = True
         self.exe_run = False
 
-    def run_exe(self):
-        # type: () -> None
-        """Invoke the program under test. Capture output streams to file."""
+    def run_exe(self) -> None:
+        """Invoke the program under test. Capture output streams to file.
+
+        Raises:
+            ProgramError: if the program under test produces an error
+        """
         import subprocess
 
         # Don't run program if input is not set up
@@ -152,8 +158,8 @@ class ExeTestFixture:
             )
 
         if _pout.returncode != 0:
-            raise TestCodeError(
-                f"Nonzero exit status ({_pout.returncode}) in test '{self.test_name}'"
+            raise ProgramError(
+                f"Nonzero exit status ({_pout.returncode}) in test {self.test_name!r}"
             )
 
         # Write streams to files
@@ -182,7 +188,7 @@ class ExeTestFixture:
     def run_query(self, query: OutputQueryBase) -> QueryResult:
         """Run a query on the exe output."""
         if not self.exe_run:
-            raise RuntimeError("Program was not run; no output to query.")
+            raise TestCodeError("Program was not run; no output to query.")
         try:
             result = query.run_query(self.prefix, self.scratch_dir)
         except QueryError:

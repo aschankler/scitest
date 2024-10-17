@@ -9,6 +9,14 @@ class SerializationError(TestCodeError):
     """Error serializing or deserializing test descriptions."""
 
 
+class TestSetupError(TestCodeError):
+    """Input conditions cannot be set up."""
+
+
+class ProgramError(TestCodeError):
+    """Error running the program under test."""
+
+
 class QueryError(TestCodeError):
     """Error running a query on test output."""
 

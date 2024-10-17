@@ -31,7 +31,7 @@ from typing import (
 
 import yaml
 
-from scitest.exceptions import SerializationError, TestCodeError
+from scitest.exceptions import SerializationError
 from scitest.query import load_query_file
 from scitest.suite import TestSuite, TestSuiteResults
 
@@ -226,6 +226,7 @@ def load_test_files(
 
     Raises:
         SerializationError: if malformed test definition is encountered
+        KeyError: if duplicate test suite names encountered; if requested suite was not found
     """
     test_suites = {}
     for test_dir in search_dirs:
@@ -236,7 +237,7 @@ def load_test_files(
     if requested_suites is not None:
         if set(requested_suites) != set(test_suites.keys()):
             missing = set(requested_suites) - set(test_suites.keys())
-            raise TestCodeError("Requested were not found: " + ", ".join(missing))
+            raise KeyError("Requested were not found: " + ", ".join(missing))
 
     return test_suites
 
@@ -305,7 +306,7 @@ def select_result_data(
         Paths to reference data indexed by suite name
 
     Raises:
-        TestCodeError: If requested suites were not found
+        KeyError: If requested suites were not found
     """
     result_files = discover_result_files(search_dirs, with_test_output=with_test_output)
     labeled_paths = {suite: path for suite, ver, path in result_files if ver == version}
@@ -313,8 +314,11 @@ def select_result_data(
     # Filter output by test suite
     if suites is not None:
         labeled_paths = {k: p for k, p in labeled_paths.items() if k in suites}
-        if set(labeled_paths.keys()) != set(suites):
-            raise TestCodeError("Suites were not found for version ")
+        if set(labeled_paths) != set(suites):
+            missing = set(labeled_paths) - set(suites)
+            raise KeyError(
+                f"Suites [{", ".join(missing)}] were not found for version {version}"
+            )
 
     return labeled_paths
 
@@ -338,14 +342,15 @@ def load_result_data(
         Map from suite names to results for each version
 
     Raises:
-        TestCodeError: If requested data could not be loaded
+        KeyError: If requested data could not be loaded
+        RuntimeError: If no data could be loaded
     """
     to_load = select_result_data(
         search_dirs, version, suites=suites, with_test_output=with_test_output
     )
 
     if len(to_load) == 0:
-        raise TestCodeError("No ref. data found for " + version)
+        raise RuntimeError("No ref. data found for " + version)
 
     def _load_one_reference(ref_path: Path) -> TestSuiteResults:
         """Load results for a single test suite."""

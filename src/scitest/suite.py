@@ -10,7 +10,7 @@ from typing import Optional, Self, TypeVar
 import attrs
 import schema
 
-from scitest.exceptions import SerializationError
+from scitest.exceptions import SerializationError, TestSetupError
 from scitest.fixture import ExeTestFixture
 from scitest.query import QuerySet, QuerySetResults, resolve_query_set
 from scitest.serialize import SchemaType, Serializable, SerializedType
@@ -57,7 +57,7 @@ class TestCase(Serializable):
         base_dir = Path.cwd() if self.base_dir is None else self.base_dir
         full_path = base_dir / in_path
         if not full_path.is_relative_to(base_dir):
-            raise ValueError("In file must be relative to base directory")
+            raise TestSetupError("Input file source must be relative to base directory")
         with open(full_path, encoding="utf8") as src_file:
             return src_file.read()
 
