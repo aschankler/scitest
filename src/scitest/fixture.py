@@ -45,10 +45,12 @@ class ExeTestFixture:
     Args:
         exe_path: Path to the executable under test
         scratch_dir_base: Directory to run the program in
+        delete_scratch: Delete scratch directory on cleanup by default
     """
 
     exe_path: Path = attrs.field(converter=_concrete_path)
     scratch_dir_base: Path = attrs.field(converter=_concrete_path)
+    delete_scratch: bool = attrs.field(default=True, kw_only=True)
 
     # Data for the test currently being run
     test_name: str = attrs.field(default="", init=False)
@@ -175,11 +177,16 @@ class ExeTestFixture:
         # Update state
         self.exe_run = True
 
-    def cleanup(self) -> None:
-        """Remove scratch space after exe run."""
+    def cleanup(self, *, delete: Optional[bool] = None) -> None:
+        """Remove scratch space after exe run.
+
+        Args:
+            delete: Override default behavior for scratch directory cleanup
+        """
         import shutil
 
-        shutil.rmtree(self.scratch_dir)
+        if (delete is None and self.delete_scratch) or (delete is not None and delete):
+            shutil.rmtree(self.scratch_dir)
         self.test_name = ""
         self.prefix = ""
         self.setup_run = False

@@ -171,7 +171,7 @@ def display_suite_comparison(
 
     # Write final suite summary
     if failed_tests > 0:
-        out_stream.write(f"{failed_tests}/{len(ref_results.results)} tests failed")
+        out_stream.write(f"{failed_tests}/{len(ref_results.results)} tests failed\n\n")
     else:
         out_stream.write("All tests passed!\n\n")
 
@@ -242,9 +242,11 @@ def _run_test_suite(
     import tempfile
 
     # Create temporary scratch dir
-    scratch_dir = tempfile.mkdtemp(prefix=suite.name, dir=scratch_base)
+    delete_scratch = scratch_base is None
+    scratch_dir = Path(tempfile.mkdtemp(prefix=suite.name, dir=scratch_base))
+
     # Set up common test fixture
-    fixture = ExeTestFixture(exe_path, scratch_dir)
+    fixture = ExeTestFixture(exe_path, scratch_dir, delete_scratch=delete_scratch)
 
     # Run the test suite
     suite_results = {}
@@ -252,7 +254,7 @@ def _run_test_suite(
         suite_results[test_name] = test.run_test(fixture)
 
     # Delete scratch directory if not needed
-    if scratch_base is None:
+    if delete_scratch:
         shutil.rmtree(scratch_dir)
 
     return TestSuiteResults(suite.name, version, suite_results)
