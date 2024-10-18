@@ -243,7 +243,7 @@ def _run_test_suite(
 
     # Create temporary scratch dir
     delete_scratch = scratch_base is None
-    scratch_dir = Path(tempfile.mkdtemp(prefix=suite.name, dir=scratch_base))
+    scratch_dir = Path(tempfile.mkdtemp(prefix=f"{suite.name}_", dir=scratch_base))
 
     # Set up common test fixture
     fixture = ExeTestFixture(exe_path, scratch_dir, delete_scratch=delete_scratch)

@@ -198,19 +198,12 @@ def main(argv: Sequence[str]) -> None:
 
     if args.mode == "test":
         conf.check_fields(
-            (
-                "exe_path",
-                "test_out",
-                "test_dirs",
-                "ref_dirs",
-                "query_dirs",
-                "scratch_dir",
-            )
+            ("exe_path", "test_out", "test_dirs", "ref_dirs", "query_dirs")
         )
         run_test_mode(conf, verbose=is_verbose)
     elif args.mode == "bench":
         conf.check_fields(
-            ("exe_path", "bench_out", "test_dirs", "query_dirs", "scratch_dir")
+            ("exe_path", "bench_out", "test_dirs", "query_dirs")
         )
         run_bench_mode(conf, verbose=is_verbose)
     elif args.mode == "compare":
