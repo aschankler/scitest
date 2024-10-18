@@ -276,5 +276,5 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
         try:
             query_set = resolve_query_set(state["query-set"])
         except KeyError as exe:
-            raise SerializationError(f"Unknown query set {state["query-set"]}") from exe
+            raise SerializationError(f"Unknown query set {state['query-set']}") from exe
         return cls(str(state["results-name"]), query_set, results)

@@ -317,7 +317,7 @@ def select_result_data(
         if set(labeled_paths) != set(suites):
             missing = set(labeled_paths) - set(suites)
             raise KeyError(
-                f"Suites [{", ".join(missing)}] were not found for version {version}"
+                f"Suites [{', '.join(missing)}] were not found for version {version}"
             )
 
     return labeled_paths
