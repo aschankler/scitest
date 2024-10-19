@@ -156,12 +156,7 @@ class ExeTestFixture:
         _args = [str(self.exe_path), *self.exe_args]
         with _PushDir(self.scratch_dir):
             _pout = subprocess.run(
-                _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-
-        if _pout.returncode != 0:
-            raise ProgramError(
-                f"Nonzero exit status ({_pout.returncode}) in test {self.test_name!r}"
+                _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
             )
 
         # Write streams to files
@@ -176,6 +171,11 @@ class ExeTestFixture:
 
         # Update state
         self.exe_run = True
+
+        if _pout.returncode != 0:
+            raise ProgramError(
+                f"Nonzero exit status ({_pout.returncode}) in test {self.test_name!r}"
+            )
 
     def cleanup(self, *, delete: Optional[bool] = None) -> None:
         """Remove scratch space after exe run.
