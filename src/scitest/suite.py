@@ -32,9 +32,9 @@ class TestCase(Serializable):
     """
 
     name: str = attrs.field()
-    query_sets: tuple[QuerySet] = attrs.field(converter=tuple)
+    query_sets: tuple[QuerySet, ...] = attrs.field(converter=tuple)
     input_files: Mapping[str, str] = attrs.field(factory=dict, kw_only=True)
-    cli_args: tuple[str] = attrs.field(converter=tuple, factory=tuple, kw_only=True)
+    cli_args: tuple[str, ...] = attrs.field(converter=tuple, factory=tuple, kw_only=True)
     base_dir: Optional[Path] = attrs.field(default=None, kw_only=True)
     prefix: str = attrs.field(kw_only=True)
 
@@ -176,8 +176,19 @@ class TestSuite(Serializable):
     @classmethod
     def get_object_schema(cls, *, strict: bool = True) -> SchemaType:
         """Return schema for test suite."""
+
+        def _unique_test_names(_seq: Sequence[TestCase]) -> bool:
+            return len(_seq) == len(set(test.name for test in _seq))
+
+        if not strict:
+            return schema.Schema(dict, name=cls.__name__)
         return schema.Schema(
-            {"suite-name": str, "tests": [TestCase.get_object_schema(strict=False)]},
+            {
+                "suite-name": str,
+                "tests": schema.And(
+                    _unique_test_names, [TestCase.get_object_schema(strict=False)]
+                ),
+            },
             name=cls.__name__,
         )
 

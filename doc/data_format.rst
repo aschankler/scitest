@@ -123,6 +123,7 @@ Test definitions are stored in files of the form
     - <test>
     ...
 
+Each test must have a name that is unique within the suite.
 Tests themselves are defined as
 
 .. code-block::
