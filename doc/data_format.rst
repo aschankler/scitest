@@ -174,13 +174,11 @@ The query result sets are formatted as
 .. code-block::
     :name: result-set-schema
 
-    result-name: <result information>
     query-set: <query set name>
     results:
       - <query result>
       - ...
 
-The result information is currently unused but may be used to provide provenance.
 The query results are serialized according to the following schema:
 
 .. code-block::

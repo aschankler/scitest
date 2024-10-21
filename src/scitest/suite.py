@@ -50,7 +50,7 @@ class TestCase(Serializable):
         for query in query_set:
             res = fixture.run_query(query)
             results.append(res)
-        return QuerySetResults(self.name, query_set, results)
+        return QuerySetResults(query_set, results)
 
     def get_input_file(self, in_path: str) -> str:
         """Read contents of an input file referenced in a test."""

@@ -150,18 +150,15 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
     """Stores a set of query results.
 
     Args:
-        query_results_name: Tag for the set of results
         query_set: Query set that produced the results
         results: Query results from each tests
     """
 
     def __init__(
         self,
-        query_results_name: str,
         query_set: QuerySet,
         results: Iterable[QueryResult],
     ) -> None:
-        self.results_name = query_results_name
         self.query_set = query_set
         self.results = {str(res.query): res for res in results}
         if not (
@@ -171,7 +168,7 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
             raise TestCodeError("Query set and results do not match.")
 
     def __str__(self) -> str:
-        return self.results_name
+        return self.query_set.query_set_name
 
     def __repr__(self) -> str:
         return (
@@ -246,7 +243,6 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
         Serialization schema::
 
             query-set-results:
-              results-name: query_result_name
               query-set: query_set_name
               results:
                 - query-name: ...
@@ -255,12 +251,19 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
                 - query_result
                 - ...
         """
-        return schema.Schema({"results-name": str, "query-set": str, "results": list})
+        if not strict:
+            return schema.Schema(dict, name=cls.__name__)
+        return schema.Schema(
+            {
+                "query-set": str,
+                "results": [QueryResult.get_object_schema(strict=False)],
+            },
+            name=cls.__name__,
+        )
 
     def serialize(self) -> SerializedType:
         """Serialize set of results according to object schema."""
         return {
-            "results-name": str(self),
             "query-set": str(self.query_set),
             "results": [res.serialize() for res in self.results.values()],
         }
@@ -277,4 +280,4 @@ class QuerySetResults(Mapping[str, QueryResult], Serializable):
             query_set = resolve_query_set(state["query-set"])
         except KeyError as exe:
             raise SerializationError(f"Unknown query set {state['query-set']}") from exe
-        return cls(str(state["results-name"]), query_set, results)
+        return cls(query_set, results)
