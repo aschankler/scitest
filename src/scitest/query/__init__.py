@@ -4,7 +4,6 @@ from scitest.query.base import (
     OutputQueryBase,
     load_query,
     register_queries,
-    register_query_type,
     resolve_query,
 )
 from scitest.query.common import RegexQuery, TableQuery
