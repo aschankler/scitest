@@ -1,18 +1,8 @@
 """Implementation of standard query types."""
 
 import re
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Iterable,
-    List,
-    Mapping,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any, Callable, Generic, TypeVar, Union
 
 import attrs
 
@@ -239,7 +229,7 @@ class TableQuery(OutputQueryBase[Union[Sequence[_T], Mapping[str, _T]]], Generic
             self._end_re_cache = re.compile(self.search_end_regex)
         return bool(self._end_re_cache.match(line))
 
-    def _parse_table_row(self, row: str) -> Union[_T, Tuple[str, _T]]:
+    def _parse_table_row(self, row: str) -> Union[_T, tuple[str, _T]]:
         split_row = row.split(self.table_delimiter)
 
         # Check if the table is ragged
@@ -277,7 +267,7 @@ class TableQuery(OutputQueryBase[Union[Sequence[_T], Mapping[str, _T]]], Generic
         search_region = False
         table_region = False
         skip_count = 0
-        rows_data = []  # type: List[Union[_T, Tuple[str, _T]]]
+        rows_data = []  # type: list[Union[_T, tuple[str, _T]]]
         table_start_re = re.compile(self.table_start)
         table_end_re = re.compile(self.table_end)
 

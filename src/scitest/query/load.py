@@ -11,7 +11,8 @@ query-sets:
   ...
 """
 
-from typing import Any, Mapping, Sequence, TypeAlias
+from collections.abc import Mapping, Sequence
+from typing import Any, TypeAlias
 
 import schema
 

@@ -2,8 +2,9 @@
 
 import enum
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Callable, Generic, Iterable, Self, TypeVar
+from typing import Any, Callable, Generic, Self, TypeVar
 
 import attrs
 import schema

@@ -19,8 +19,9 @@ which is deserialized as `RegisteredType()`
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
 from operator import methodcaller
-from typing import Any, Callable, Generic, Mapping, Optional, Self, Sequence, TypeVar
+from typing import Any, Callable, Generic, Optional, Self, TypeVar
 
 import attrs
 import attrs.validators as attrsv
